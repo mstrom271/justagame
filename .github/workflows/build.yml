@@ -1,0 +1,174 @@
+name: Build
+
+on:
+  push:
+
+jobs:
+  build_android_arm64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BUILD_TYPE: Release
+      ABI: armv8
+    steps:
+      - uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+          local-cache: true
+      - name: Install Host Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.1'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          cache: 'true'
+          cache-key-prefix: 'install-qt-action'
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.1'
+          host: 'linux'
+          target: 'android'
+          arch: 'android_arm64_v8a'
+          cache: 'true'
+          cache-key-prefix: 'install-qt-action'
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@main
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+          while IFS= read -r line; do line=$(echo "$line" | tr -d '\r'); export "$line"; done < "./config.ini"
+          ./build.sh OS=Android BUILD_TYPE=${{ env.BUILD_TYPE }} API_LEVEL=31 ABI=${{ env.ABI }}
+          FINAL_NAME=${PROJECT_NAME}_${PROJECT_VERSION}_android_${{ env.ABI }}.apk
+          mv ./build/Android/${{ env.ABI }}/${{ env.BUILD_TYPE }}/android-build/${PROJECT_NAME}.apk \
+             ./build/Android/${{ env.ABI }}/${{ env.BUILD_TYPE }}/android-build/${FINAL_NAME}
+          TAG=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///')_android
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "FINAL_NAME=$FINAL_NAME" >> $GITHUB_ENV
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          artifacts: "./build/Android/${{ env.ABI }}/${{ env.BUILD_TYPE }}/android-build/${{ env.FINAL_NAME }}"
+          tag: ${{ env.TAG }}
+
+
+  build_windows_x86_64:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.1'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          cache: 'true'
+          cache-key-prefix: 'install-qt-action'
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@main
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+          while IFS= read -r line; do line=$(echo "$line" | tr -d '\r'); export "$line"; done < "./config.ini"
+          ./build.sh OS=Windows BUILD_TYPE=${{ env.BUILD_TYPE }}
+          FINAL_NAME=${PROJECT_NAME}_${PROJECT_VERSION}_windows_x86_64.tar.bz2
+          mv ./build/Windows/x86_64/${{ env.BUILD_TYPE }}/${PROJECT_NAME}.tar.bz2 \
+             ./build/Windows/x86_64/${{ env.BUILD_TYPE }}/${FINAL_NAME}
+          TAG=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///')_windows
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "FINAL_NAME=$FINAL_NAME" >> $GITHUB_ENV
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          artifacts: "./build/Windows/x86_64/${{ env.BUILD_TYPE }}/${{ env.FINAL_NAME }}"
+          tag: ${{ env.TAG }}
+
+
+  build_linux_x86_64:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      BUILD_TYPE: Release
+    steps:
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.1.*'
+          version: '6.5.1'
+          host: 'linux'
+          target: 'desktop'
+          arch: 'gcc_64'
+          cache: 'true'
+          cache-key-prefix: 'install-qt-action'
+      - name: Install Conan
+        id: conan
+        uses: turtlebrowser/get-conan@main
+      - name: Install LinuxDeploy
+        uses: miurahr/install-linuxdeploy-action@v1
+        with:
+          plugins: qt appimage
+      - name: install dependencies
+        run: sudo apt-get update && sudo apt-get install libfuse2 libxcb-cursor0 -y
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Build
+        shell: bash
+        run: |
+          while IFS= read -r line; do line=$(echo "$line" | tr -d '\r'); export "$line"; done < "./config.ini"
+          ./build.sh OS=Linux BUILD_TYPE=${{ env.BUILD_TYPE }}
+          FINAL_NAME=${PROJECT_NAME}_${PROJECT_VERSION}_linux_x86_64.AppImage
+          mv ./build/Linux/x86_64/${{ env.BUILD_TYPE }}/${PROJECT_NAME}-x86_64.AppImage \
+             ./build/Linux/x86_64/${{ env.BUILD_TYPE }}/${FINAL_NAME}
+          TAG=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///')_linux
+          echo "TAG=$TAG" >> $GITHUB_ENV
+          echo "FINAL_NAME=$FINAL_NAME" >> $GITHUB_ENV
+      - name: Release
+        uses: ncipollo/release-action@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          artifacts: "./build/Linux/x86_64/${{ env.BUILD_TYPE }}/${{ env.FINAL_NAME }}"
+          tag: ${{ env.TAG }}
+          
+          
+# jobs:
+#   build_test
+#     runs-on: windows-latest
+#     permissions:
+#       contents: write
+#     env:
+#       BUILD_TYPE: Release
+#     steps:
+#       - name: Build
+#         shell: bash
+#         run: |
+#           echo Hello >> ${{ env.BUILD_TYPE }}_1.txt
+#           echo World >> ${{ env.BUILD_TYPE }}_2.txt
+#       - name: Set Tag Name
+#         shell: bash
+#         run: |
+#           TAG=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///')_windows
+#           echo "TAG=$TAG" >> $GITHUB_ENV
+#       - name: Release
+#         uses: ncipollo/release-action@v1
+#         if: startsWith(github.ref, 'refs/tags/')
+#         with:
+#           artifacts: "${{ env.BUILD_TYPE }}_1.txt, ${{ env.BUILD_TYPE }}_2.txt"
+#           tag: ${{ env.TAG }}
