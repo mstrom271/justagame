@@ -1,13 +1,12 @@
-
-#include "myclass.h"
+#include "glwidget.h"
 #include <QApplication>
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
-    MyClass myClass;
-    myClass.resize(400, 300);
-    myClass.show();
+    GLWidget glwidget;
+    glwidget.resize(800, 600);
+    glwidget.show();
 
     return app.exec();
 }

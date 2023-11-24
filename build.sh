@@ -2,35 +2,7 @@
 set -e
 set -x
 
-##### script invoke examples: #####
-# ./build.sh \
-#     OS=Linux \
-#     BUILD_TYPE=Debug \
-#     Qt6_DIR=~/Qt/6.5.1/gcc_64
-
-# ./build.sh \
-#     OS=Android \
-#     BUILD_TYPE=Debug \
-#     Qt6_DIR=~/Qt/6.5.1/android_arm64_v8a \
-#     ANDROID_NDK=/opt/android-sdk/ndk/25.1.8937393/ \
-#     API_LEVEL=31 \
-#     ABI=armv8 \
-#     ANDROID_DEVICE_ID=28ff7904
-
-
-##### required environment or commandline variables: ######
-# export STAGE=Build          # Config, Build, Deploy. If not specified, all three stages are implied
-
-# export OS=Android          # Android, Linux, Windows
-# export BUILD_TYPE=Debug    # Debug, Release
-# export Qt6_DIR=~/Qt/6.5.1/gcc_64  # Qt for target platform
-
-# # android specific variables:
-# export ANDROID_NDK=/opt/android-sdk/ndk/25.1.8937393/
-# export API_LEVEL=31
-export ABI=x86_64       # armv8, armv7, x86_64, x86
-# export ANDROID_DEVICE_ID=$(adb devices | sed -n 2p | awk '{print $1}')
-
+export ABI=x86_64
 
 # Create variables from commandline params
 for param in "$@"
@@ -144,6 +116,9 @@ if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Build" ]]; then
     ./rcc/rcc.sh
 
     cmake --build $DESTINATION_DIR
+    if [ $? -ne 0 ]; then
+        exit 1
+    fi
 fi
 
 

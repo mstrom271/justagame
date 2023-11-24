@@ -3,7 +3,7 @@
 /rcc/rcc.qrc
 /rcc/rcc/translation_*
 /src/config.h
-build_local.sh
+config.sh
 CMakeUserPresets.json
 CMakePresets.json
 /android/AndroidManifest.xml
