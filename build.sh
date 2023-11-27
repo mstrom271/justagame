@@ -54,6 +54,7 @@ if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Config" ]]; then
         "Linux")
             conan install . \
                 -s build_type=$BUILD_TYPE \
+                -s compiler.cppstd=20 \
                 -c tools.cmake.cmaketoolchain:generator=Ninja \
                 --build=missing \
                 --output-folder=$DESTINATION_DIR
@@ -66,6 +67,7 @@ if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Config" ]]; then
         "Windows")
             conan install . \
                 -s build_type=$BUILD_TYPE \
+                -s compiler.cppstd=20 \
                 -c tools.cmake.cmaketoolchain:generator=Ninja \
                 -c tools.microsoft.bash:subsystem=msys2 \
                 -c tools.microsoft.bash:active=True \
@@ -83,11 +85,12 @@ if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Config" ]]; then
             conan install . \
                 -s os=$OS \
                 -s arch=$ABI \
+                -s build_type=$BUILD_TYPE \
+                -s os.api_level=$API_LEVEL \
                 -s compiler=clang \
                 -s compiler.version=14 \
+                -s compiler.cppstd=20 \
                 -c tools.cmake.cmaketoolchain:generator=Ninja \
-                -s os.api_level=$API_LEVEL \
-                -s build_type=$BUILD_TYPE \
                 -c tools.android:ndk_path=$ANDROID_NDK \
                 --build=missing \
                 --output-folder=$DESTINATION_DIR
@@ -116,9 +119,6 @@ if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Build" ]]; then
     ./rcc/rcc.sh
 
     cmake --build $DESTINATION_DIR
-    if [ $? -ne 0 ]; then
-        exit 1
-    fi
 fi
 
 
