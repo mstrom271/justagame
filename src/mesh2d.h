@@ -14,6 +14,8 @@ class mesh2d {
     QOpenGLTexture *texture = nullptr;
     QOpenGLBuffer *vbo = nullptr;
 
+    bool cache_invalid = true;
+
   public:
     mesh2d(int grid_size_x, int grid_size_y, float width, float height,
            const QImage &qimage)
@@ -56,18 +58,14 @@ class mesh2d {
     }
 
     void precalc(const camera2d &camera) {
-        mat23 matrix;
-        matrix.rotate(angle);
-        matrix.translate(pos_x, pos_y);
-
-        matrix.translate(-camera.getPosX(), -camera.getPosY());
-        matrix.rotate(-camera.getAngle());
+        if (!cache_invalid)
+            return;
 
         std::vector<float> openglVerticies;
         for (int x = 0; x < grid_size_x - 1; x++)
             for (int y = 0; y < grid_size_y - 1; y++) {
                 vec2d v;
-                v = mesh_vec[x * grid_size_y + y] * matrix;
+                v = mesh_vec[x * grid_size_y + y];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -76,7 +74,7 @@ class mesh2d {
                 openglVerticies.push_back(static_cast<float>(y) /
                                           (grid_size_y - 1));
 
-                v = mesh_vec[(x + 1) * grid_size_y + y] * matrix;
+                v = mesh_vec[(x + 1) * grid_size_y + y];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -85,7 +83,7 @@ class mesh2d {
                 openglVerticies.push_back(static_cast<float>(y) /
                                           (grid_size_y - 1));
 
-                v = mesh_vec[(x + 1) * grid_size_y + (y + 1)] * matrix;
+                v = mesh_vec[(x + 1) * grid_size_y + (y + 1)];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -94,7 +92,7 @@ class mesh2d {
                 openglVerticies.push_back(static_cast<float>(y + 1) /
                                           (grid_size_y - 1));
 
-                v = mesh_vec[x * grid_size_y + y] * matrix;
+                v = mesh_vec[x * grid_size_y + y];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -103,7 +101,7 @@ class mesh2d {
                 openglVerticies.push_back(static_cast<float>(y) /
                                           (grid_size_y - 1));
 
-                v = mesh_vec[(x + 1) * grid_size_y + (y + 1)] * matrix;
+                v = mesh_vec[(x + 1) * grid_size_y + (y + 1)];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -112,7 +110,7 @@ class mesh2d {
                 openglVerticies.push_back(static_cast<float>(y + 1) /
                                           (grid_size_y - 1));
 
-                v = mesh_vec[x * grid_size_y + (y + 1)] * matrix;
+                v = mesh_vec[x * grid_size_y + (y + 1)];
                 openglVerticies.push_back(v.x());
                 openglVerticies.push_back(v.y());
 
@@ -126,6 +124,7 @@ class mesh2d {
         vbo->write(0, openglVerticies.data(),
                    getOpenglVerticiesSize() * sizeof(GLfloat));
         vbo->release();
+        cache_invalid = false;
     }
 
     QOpenGLBuffer *getVBO() { return vbo; }
@@ -136,16 +135,12 @@ class mesh2d {
 
     QOpenGLTexture *getTexture() { return texture; }
 
-    void explosion(vec2d point, camera2d camera) {
-        point.rotate(camera.getAngle());
-        point.translate(camera.getPosX(), camera.getPosY());
-
-        point.translate(-pos_x, -pos_y);
-        point.rotate(-angle);
+    void explosion(vec2d local_point) {
         for (auto &v : mesh_vec) {
-            auto temp = v - point;
+            auto temp = v - local_point;
             v = v + temp.normed() * (std::exp(-0.5 * temp.length())) * 0.2;
         }
+        cache_invalid = true;
     }
 
     void setPosX(double x) { pos_x = x; }

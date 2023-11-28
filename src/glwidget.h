@@ -2,6 +2,7 @@
 
 #include "mesh2d.h"
 #include "world2d.h"
+#include <QElapsedTimer>
 #include <QMatrix4x4>
 #include <QOpenGLBuffer>
 #include <QOpenGLFunctions>
@@ -18,8 +19,6 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     GLWidget(QWidget *widget = nullptr);
     ~GLWidget();
 
-    void rotateBy(int xAngle, int yAngle, int zAngle);
-    void setClearColor(const QColor &color);
     void updateMatrix();
 
   signals:
@@ -36,10 +35,11 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 
   private:
     world2d world;
-    QMatrix4x4 m;
+    QMatrix4x4 matrix;
     QOpenGLShaderProgram *program = nullptr;
     QPoint oldPos;
     QTimer *timer;
+    QElapsedTimer *elapsedTimer;
     static constexpr int PROGRAM_VERTEX_ATTRIBUTE = 0;
     static constexpr int PROGRAM_TEXCOORD_ATTRIBUTE = 1;
 };

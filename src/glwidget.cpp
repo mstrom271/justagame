@@ -75,13 +75,16 @@ void GLWidget::initializeGL() {
     program->bind();
     program->setUniformValue("texture", 0);
 
+    elapsedTimer = new QElapsedTimer();
+    elapsedTimer->start();
+
     timer = new QTimer(this);
     connect(timer, &QTimer::timeout, [this]() { update(); });
     timer->start(1000 / 100);
 }
 
 void GLWidget::updateMatrix() {
-    m.setToIdentity();
+    matrix.setToIdentity();
 
     float x_coef = 1;
     float y_coef = 1;
@@ -89,10 +92,11 @@ void GLWidget::updateMatrix() {
         x_coef = float(width()) / height();
     else
         y_coef = float(height()) / width();
-    m.ortho(-world.getCamera().getCameraWidth() / 2 * x_coef,
-            +world.getCamera().getCameraWidth() / 2 * x_coef,
-            -world.getCamera().getCameraHeight() / 2 * y_coef,
-            +world.getCamera().getCameraHeight() / 2 * y_coef, -15.0f, 30.0f);
+    matrix.ortho(-world.getCamera().getCameraWidth() / 2 * x_coef,
+                 +world.getCamera().getCameraWidth() / 2 * x_coef,
+                 -world.getCamera().getCameraHeight() / 2 * y_coef,
+                 +world.getCamera().getCameraHeight() / 2 * y_coef, -15.0f,
+                 30.0f);
 }
 
 void GLWidget::paintGL() {
@@ -102,17 +106,26 @@ void GLWidget::paintGL() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    updateMatrix();
-
     for (auto &mesh : world)
         mesh.setAngle(mesh.getAngle() + 0.01);
+
+    updateMatrix();
     world.precalc();
     for (auto &mesh : world) {
+        QMatrix4x4 model_matrix = matrix;
+
         mesh.getTexture()->bind();
         mesh.getVBO()->bind();
-        // program->bind();
 
-        program->setUniformValue("matrix", m);
+        model_matrix.rotate(-world.getCamera().getAngle() / (2 * M_PI) * 360, 0,
+                            0, 1);
+        model_matrix.translate(-world.getCamera().getPosX(),
+                               -world.getCamera().getPosY());
+
+        model_matrix.translate(mesh.getPosX(), mesh.getPosY());
+        model_matrix.rotate(mesh.getAngle() / (2 * M_PI) * 360, 0, 0, 1);
+        // program->bind();
+        program->setUniformValue("matrix", model_matrix);
         program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
         program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
         program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2,
@@ -126,6 +139,8 @@ void GLWidget::paintGL() {
         mesh.getTexture()->release();
         // program->release();
     }
+    qDebug() << elapsedTimer->elapsed();
+    elapsedTimer->restart();
 }
 
 void GLWidget::resizeGL(int width, int height) {}
@@ -168,18 +183,29 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     }
 
     if (event->buttons() & Qt::LeftButton) {
-        nearest_mesh->explosion(camera_point, world.getCamera());
+        vec2d local_point = camera_point;
+        local_point.rotate(world.getCamera().getAngle());
+        local_point.translate(world.getCamera().getPosX(),
+                              world.getCamera().getPosY());
+
+        local_point.translate(-nearest_mesh->getPosX(),
+                              -nearest_mesh->getPosY());
+        local_point.rotate(-nearest_mesh->getAngle());
+
+        nearest_mesh->explosion(local_point);
         update();
     } else if (event->buttons() & Qt::RightButton) {
-        auto v = event->pos() - oldPos;
+        auto camera_v = event->pos() - oldPos;
+        vec2d world_v = vec2d(camera_v);
+        world_v.rotate(-world.getCamera().getAngle());
 
         auto size = qMin(width(), height());
         nearest_mesh->setPosX(nearest_mesh->getPosX() +
-                              v.rx() * world.getCamera().getCameraWidth() /
+                              world_v.x() * world.getCamera().getCameraWidth() /
                                   size);
         nearest_mesh->setPosY(nearest_mesh->getPosY() -
-                              v.ry() * world.getCamera().getCameraHeight() /
-                                  size);
+                              world_v.y() *
+                                  world.getCamera().getCameraHeight() / size);
 
         oldPos = event->pos();
         update();
