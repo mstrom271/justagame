@@ -6,6 +6,7 @@
 #include <QMatrix4x4>
 #include <QOpenGLBuffer>
 #include <QOpenGLFunctions>
+#include <QOpenGLShaderProgram>
 #include <QOpenGLWidget>
 #include <QTimer>
 
@@ -36,10 +37,13 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
   private:
     world2d world;
     QMatrix4x4 matrix;
-    QOpenGLShaderProgram *program = nullptr;
+    QOpenGLShaderProgram *program = nullptr, *program_debug = nullptr;
     QPoint oldPos;
     QTimer *timer;
     QElapsedTimer *elapsedTimer;
     static constexpr int PROGRAM_VERTEX_ATTRIBUTE = 0;
     static constexpr int PROGRAM_TEXCOORD_ATTRIBUTE = 1;
+
+    QOpenGLShader *load_vshader(QString filename);
+    QOpenGLShader *load_fshader(QString filename);
 };

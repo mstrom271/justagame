@@ -13,8 +13,9 @@ class mesh2d {
 
     QOpenGLTexture *texture = nullptr;
     QOpenGLBuffer *vbo = nullptr;
-
-    bool cache_invalid = true;
+    bool vbo_invalid = true;
+    QOpenGLBuffer *vbo_debug = nullptr;
+    bool vbo_debug_invalid = true;
 
   public:
     mesh2d(int grid_size_x, int grid_size_y, float width, float height,
@@ -35,6 +36,12 @@ class mesh2d {
         vbo->bind();
         vbo->allocate(getOpenglVerticiesSize() * sizeof(GLfloat));
         vbo->release();
+
+        vbo_debug = new QOpenGLBuffer();
+        vbo_debug->create();
+        vbo_debug->bind();
+        vbo_debug->allocate(getOpenglVerticiesSize() * sizeof(GLfloat));
+        vbo_debug->release();
     }
 
     mesh2d(mesh2d &&mesh) {
@@ -50,15 +57,19 @@ class mesh2d {
 
         vbo = mesh.vbo;
         mesh.vbo = nullptr;
+
+        vbo_debug = mesh.vbo_debug;
+        mesh.vbo_debug = nullptr;
     }
 
     ~mesh2d() {
         delete vbo;
+        delete vbo_debug;
         delete texture;
     }
 
-    void precalc(const camera2d &camera) {
-        if (!cache_invalid)
+    void precalc() {
+        if (!vbo_invalid)
             return;
 
         std::vector<float> openglVerticies;
@@ -124,14 +135,45 @@ class mesh2d {
         vbo->write(0, openglVerticies.data(),
                    getOpenglVerticiesSize() * sizeof(GLfloat));
         vbo->release();
-        cache_invalid = false;
+        vbo_invalid = false;
+    }
+
+    void precalcDebug() {
+
+        if (!vbo_debug_invalid)
+            return;
+
+        float left = mesh_vec.begin()->x();
+        float right = mesh_vec.begin()->x();
+        float top = mesh_vec.begin()->y();
+        float bottom = mesh_vec.begin()->y();
+
+        for (const auto &v : mesh_vec) {
+            left = std::min(float(v.x()), left);
+            right = std::max(float(v.x()), right);
+            bottom = std::min(float(v.y()), bottom);
+            top = std::max(float(v.y()), top);
+        }
+
+        float openglVerticies[] = {left,  bottom, right, bottom, right, bottom,
+                                   right, top,    right, top,    left,  top,
+                                   left,  top,    left,  bottom};
+
+        vbo_debug->bind();
+        vbo_debug->write(0, openglVerticies,
+                         getOpenglVerticiesDebugSize() * sizeof(GLfloat));
+        vbo_debug->release();
+        vbo_debug_invalid = false;
     }
 
     QOpenGLBuffer *getVBO() { return vbo; }
+    QOpenGLBuffer *getVBODebug() { return vbo_debug; }
 
     size_t getOpenglVerticiesSize() {
         return (grid_size_x - 1) * (grid_size_y - 1) * 24;
     }
+
+    size_t getOpenglVerticiesDebugSize() { return 16; }
 
     QOpenGLTexture *getTexture() { return texture; }
 
@@ -140,7 +182,8 @@ class mesh2d {
             auto temp = v - local_point;
             v = v + temp.normed() * (std::exp(-0.5 * temp.length())) * 0.2;
         }
-        cache_invalid = true;
+        vbo_invalid = true;
+        vbo_debug_invalid = true;
     }
 
     void setPosX(double x) { pos_x = x; }

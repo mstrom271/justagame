@@ -14,7 +14,36 @@ GLWidget::~GLWidget() {
     makeCurrent();
     world.destroy();
     delete program;
+    delete program_debug;
     doneCurrent();
+}
+
+QOpenGLShader *GLWidget::load_vshader(QString filename) {
+    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
+    QFile file_vshader(filename);
+    if (file_vshader.open(QIODevice::ReadOnly)) {
+        qint64 fileSize = file_vshader.size();
+        QByteArray fileContent(fileSize, '\0');
+        qint64 bytesRead = file_vshader.read(fileContent.data(), fileSize);
+        vshader->compileSourceCode(fileContent.constData());
+    } else
+        qDebug() << "Unable to open: " << file_vshader.fileName();
+
+    return vshader;
+}
+
+QOpenGLShader *GLWidget::load_fshader(QString filename) {
+    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
+    QFile file_fshader(filename);
+    if (file_fshader.open(QIODevice::ReadOnly)) {
+        qint64 fileSize = file_fshader.size();
+        QByteArray fileContent(fileSize, '\0');
+        qint64 bytesRead = file_fshader.read(fileContent.data(), fileSize);
+        fshader->compileSourceCode(fileContent.constData());
+    } else
+        qDebug() << "Unable to open: " << file_fshader.fileName();
+
+    return fshader;
 }
 
 void GLWidget::initializeGL() {
@@ -25,8 +54,9 @@ void GLWidget::initializeGL() {
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 1.0);
+    float coef = float(width()) / height();
     for (int i = 0; i < 10; i++) {
-        double pos_x = dis(gen) * 60 - 30;
+        double pos_x = (dis(gen) * 60 - 30) * coef;
         double pos_y = dis(gen) * 60 - 30;
         double angle = dis(gen) * 2 * M_PI;
 
@@ -45,35 +75,27 @@ void GLWidget::initializeGL() {
         world.addMesh(std::move(mesh));
     }
 
-    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
-    QFile file_vshader(":/rcc/vertex_shader.glsl");
-    if (file_vshader.open(QIODevice::ReadOnly)) {
-        qint64 fileSize = file_vshader.size();
-        QByteArray fileContent(fileSize, '\0');
-        qint64 bytesRead = file_vshader.read(fileContent.data(), fileSize);
-        vshader->compileSourceCode(fileContent.constData());
-    } else
-        qDebug() << "Unable to open: " << file_vshader.fileName();
-
-    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
-    QFile file_fshader(":/rcc/fragment_shader.glsl");
-    if (file_fshader.open(QIODevice::ReadOnly)) {
-        qint64 fileSize = file_fshader.size();
-        QByteArray fileContent(fileSize, '\0');
-        qint64 bytesRead = file_fshader.read(fileContent.data(), fileSize);
-        fshader->compileSourceCode(fileContent.constData());
-    } else
-        qDebug() << "Unable to open: " << file_fshader.fileName();
-
+    QOpenGLShader *vshader = load_vshader(":/rcc/vertex_shader.glsl");
+    QOpenGLShader *fshader = load_fshader(":/rcc/fragment_shader.glsl");
     program = new QOpenGLShaderProgram;
     program->addShader(vshader);
     program->addShader(fshader);
     program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
     program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
     program->link();
-
     program->bind();
     program->setUniformValue("texture", 0);
+    program->release();
+
+    QOpenGLShader *vshader_debug =
+        load_vshader(":/rcc/vertex_shader_debug.glsl");
+    QOpenGLShader *fshader_debug =
+        load_fshader(":/rcc/fragment_shader_debug.glsl");
+    program_debug = new QOpenGLShaderProgram;
+    program_debug->addShader(vshader_debug);
+    program_debug->addShader(fshader_debug);
+    program_debug->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
+    program_debug->link();
 
     elapsedTimer = new QElapsedTimer();
     elapsedTimer->start();
@@ -84,19 +106,22 @@ void GLWidget::initializeGL() {
 }
 
 void GLWidget::updateMatrix() {
-    matrix.setToIdentity();
-
     float x_coef = 1;
     float y_coef = 1;
     if (width() > height())
         x_coef = float(width()) / height();
     else
         y_coef = float(height()) / width();
+
+    matrix.setToIdentity();
     matrix.ortho(-world.getCamera().getCameraWidth() / 2 * x_coef,
                  +world.getCamera().getCameraWidth() / 2 * x_coef,
                  -world.getCamera().getCameraHeight() / 2 * y_coef,
                  +world.getCamera().getCameraHeight() / 2 * y_coef, -15.0f,
                  30.0f);
+    matrix.rotate(-world.getCamera().getAngle() / (2 * M_PI) * 360, 0, 0, 1);
+    matrix.translate(-world.getCamera().getPosX(),
+                     -world.getCamera().getPosY());
 }
 
 void GLWidget::paintGL() {
@@ -111,20 +136,16 @@ void GLWidget::paintGL() {
 
     updateMatrix();
     world.precalc();
+    world.precalcDebug();
     for (auto &mesh : world) {
         QMatrix4x4 model_matrix = matrix;
-
-        mesh.getTexture()->bind();
-        mesh.getVBO()->bind();
-
-        model_matrix.rotate(-world.getCamera().getAngle() / (2 * M_PI) * 360, 0,
-                            0, 1);
-        model_matrix.translate(-world.getCamera().getPosX(),
-                               -world.getCamera().getPosY());
-
         model_matrix.translate(mesh.getPosX(), mesh.getPosY());
         model_matrix.rotate(mesh.getAngle() / (2 * M_PI) * 360, 0, 0, 1);
-        // program->bind();
+
+        // Draw triangles with texture
+        program->bind();
+        mesh.getTexture()->bind();
+        mesh.getVBO()->bind();
         program->setUniformValue("matrix", model_matrix);
         program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
         program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
@@ -133,11 +154,22 @@ void GLWidget::paintGL() {
         program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT,
                                     2 * sizeof(GLfloat), 2,
                                     4 * sizeof(GLfloat));
-
         glDrawArrays(GL_TRIANGLES, 0, mesh.getOpenglVerticiesSize());
         mesh.getVBO()->release();
         mesh.getTexture()->release();
-        // program->release();
+        program->release();
+
+        // Draw frame only for debug
+        program_debug->bind();
+        mesh.getVBODebug()->bind();
+        program_debug->setUniformValue("externalColor", QVector4D(0, 1, 0, 1));
+        program_debug->setUniformValue("matrix", model_matrix);
+        program_debug->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
+        program_debug->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0,
+                                          2, 2 * sizeof(GLfloat));
+        glDrawArrays(GL_LINES, 0, mesh.getOpenglVerticiesDebugSize());
+        mesh.getVBODebug()->release();
+        program_debug->release();
     }
     qDebug() << elapsedTimer->elapsed();
     elapsedTimer->restart();

@@ -21,7 +21,12 @@ class world2d {
 
     void precalc() {
         for (auto &mesh : meshes)
-            mesh.precalc(camera);
+            mesh.precalc();
+    }
+
+    void precalcDebug() {
+        for (auto &mesh : meshes)
+            mesh.precalcDebug();
     }
 
     void destroy() { meshes.clear(); }
