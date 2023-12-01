@@ -41,6 +41,18 @@ check_variable_existence PROJECT_VERSION
 DESTINATION_DIR=./build/$OS/$ABI/$BUILD_TYPE
 mkdir -p $DESTINATION_DIR
 
+# Translations
+while IFS= read -r lang
+do
+    lang=$(echo "$lang" | tr -d '\r')
+    ${QT_HOST_PATH}/bin/lupdate ./src/ -ts ./translations/translation_${lang}.ts
+    ${QT_HOST_PATH}/bin/lrelease ./translations/*.ts
+done < "./translations/list.txt"
+mkdir -p ./rcc/rcc
+mv ./translations/*.qm ./rcc/rcc
+
+# Resources
+./rcc/rcc.sh
 
 # Config
 if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Config" ]]; then
@@ -105,22 +117,8 @@ fi
 
 # Build
 if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Build" ]]; then
-    # Translations
-    while IFS= read -r lang
-    do
-        lang=$(echo "$lang" | tr -d '\r')
-        ${QT_HOST_PATH}/bin/lupdate ./src/ -ts ./translations/translation_${lang}.ts
-        ${QT_HOST_PATH}/bin/lrelease ./translations/*.ts
-    done < "./translations/list.txt"
-    mkdir -p ./rcc/rcc
-    mv ./translations/*.qm ./rcc/rcc
-
-    # Resources
-    ./rcc/rcc.sh
-
     cmake --build $DESTINATION_DIR
 fi
-
 
 # Deploy
 if ! [[ -n "$STAGE" ]] || [[ "$STAGE" == "Deploy" ]]; then
