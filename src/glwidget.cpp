@@ -128,7 +128,7 @@ void GLWidget::paintGL() {
         model_matrix.rotate(mesh.getAngle() / (2 * M_PI) * 360, 0, 0, 1);
 
         // Draw triangles with texture
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         program->bind();
         mesh.getTexture()->bind();
         mesh.getVBO()->bind();
@@ -146,7 +146,7 @@ void GLWidget::paintGL() {
         program->release();
 
         // Draw frame only for debug
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         program_debug->bind();
         mesh.getVBODebug()->bind();
         program_debug->setUniformValue("externalColor", QVector4D(0, 1, 0, 1));
