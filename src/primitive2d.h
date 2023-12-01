@@ -55,8 +55,8 @@ class primitive2d {
   public:
     virtual ~primitive2d() = default;
 
-    virtual primitive2d *precalc(mat23 &matrix) const;
-    virtual bBox getBBox() const;
+    virtual void precalc(const mat23 &matrix) = 0;
+    virtual bBox getBBox() const = 0;
 };
 
 class circle2d : public primitive2d {
@@ -71,7 +71,7 @@ class circle2d : public primitive2d {
     double getRadius() const;
     void setRadius(double newRadius);
 
-    circle2d *precalc(mat23 &matrix) const override;
+    void precalc(const mat23 &matrix) override;
     bBox getBBox() const override;
 };
 
@@ -86,7 +86,7 @@ class line2d : public primitive2d {
     const vec2d &getP2() const;
     void setP2(const vec2d &newP2);
 
-    line2d *precalc(mat23 &matrix) const override;
+    void precalc(const mat23 &matrix) override;
     bBox getBBox() const override;
 };
 
@@ -116,27 +116,30 @@ class rectangle2d : public primitive2d {
     const vec2d &P4() const;
     void setP4(const vec2d &newP4);
 
-    rectangle2d *precalc(mat23 &matrix) const override;
+    void precalc(const mat23 &matrix) override;
     bBox getBBox() const override;
 };
 
-bool collisionPrimitives(const circle2d *c1, const circle2d *c2,
+bool collisionPrimitives(const circle2d &c1, const circle2d &c2,
                          collisionPrimitivesPoint &point);
-bool collisionPrimitives(const circle2d *c1, const line2d *l2,
+bool collisionPrimitives(const circle2d &c1, const line2d &l2,
                          collisionPrimitivesPoint &point);
-bool collisionPrimitives(const circle2d *c1, const rectangle2d *r2,
-                         collisionPrimitivesPoint &point);
-
-bool collisionPrimitives(const line2d *l1, const circle2d *c2,
-                         collisionPrimitivesPoint &point);
-bool collisionPrimitives(const line2d *l1, const line2d *l2,
-                         collisionPrimitivesPoint &point);
-bool collisionPrimitives(const line2d *l1, const rectangle2d *r2,
+bool collisionPrimitives(const circle2d &c1, const rectangle2d &r2,
                          collisionPrimitivesPoint &point);
 
-bool collisionPrimitives(const rectangle2d *r1, const circle2d *c2,
+bool collisionPrimitives(const line2d &l1, const circle2d &c2,
                          collisionPrimitivesPoint &point);
-bool collisionPrimitives(const rectangle2d *r1, const line2d *l2,
+bool collisionPrimitives(const line2d &l1, const line2d &l2,
                          collisionPrimitivesPoint &point);
-bool collisionPrimitives(const rectangle2d *r1, const rectangle2d *r2,
+bool collisionPrimitives(const line2d &l1, const rectangle2d &r2,
+                         collisionPrimitivesPoint &point);
+
+bool collisionPrimitives(const rectangle2d &r1, const circle2d &c2,
+                         collisionPrimitivesPoint &point);
+bool collisionPrimitives(const rectangle2d &r1, const line2d &l2,
+                         collisionPrimitivesPoint &point);
+bool collisionPrimitives(const rectangle2d &r1, const rectangle2d &r2,
+                         collisionPrimitivesPoint &point);
+
+bool collisionPrimitives(const primitive2d &p1, const primitive2d &p2,
                          collisionPrimitivesPoint &point);

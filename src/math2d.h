@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QMatrix4x4>
 #include <QPointF>
 #include <QTransform>
 
@@ -52,6 +51,7 @@ class vec2d {
     vec2d &operator+=(const vec2d &v);
     vec2d operator-(const vec2d &v) const;
     vec2d &operator-=(const vec2d &v);
+    vec2d operator-() const;
     vec2d operator*(double scale) const;
     vec2d &operator*=(double scale);
     vec2d operator*(const mat23 &m) const;

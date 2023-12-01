@@ -104,6 +104,8 @@ vec2d &vec2d::operator-=(const vec2d &v) {
     return *this;
 }
 
+vec2d vec2d::operator-() const { return vec2d(-ix, -iy); }
+
 vec2d vec2d::operator*(const double scale) const {
     return vec2d(ix * scale, iy * scale);
 }
