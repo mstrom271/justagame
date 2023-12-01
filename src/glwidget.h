@@ -44,6 +44,6 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     static constexpr int PROGRAM_VERTEX_ATTRIBUTE = 0;
     static constexpr int PROGRAM_TEXCOORD_ATTRIBUTE = 1;
 
-    QOpenGLShader *load_vshader(QString filename);
-    QOpenGLShader *load_fshader(QString filename);
+    QOpenGLShader *load_shader(QString filename,
+                               QOpenGLShader::ShaderType type);
 };

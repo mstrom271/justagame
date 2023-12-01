@@ -6,4 +6,4 @@
 config.sh
 CMakeUserPresets.json
 CMakePresets.json
-/android/AndroidManifest.xml
+*.drawio

@@ -25,6 +25,8 @@ Qt, Conan, Android NDK, [linuxdeploy](https://github.com/linuxdeploy/linuxdeploy
 
 ### Required environment or commandline variables: ###
 ```bash
+export STAGE=Build          # Config, Build, Deploy. If not specified, all three stages are implied
+
 export OS=Android          # Android, Linux, Windows
 export BUILD_TYPE=Debug    # Debug, Release
 export Qt6_DIR=~/Qt/6.5.1/android_arm64_v8a  # Qt for target platform

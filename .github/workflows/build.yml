@@ -146,29 +146,3 @@ jobs:
         with:
           artifacts: "./build/Linux/x86_64/${{ env.BUILD_TYPE }}/${{ env.FINAL_NAME }}"
           tag: ${{ env.TAG }}
-          
-          
-# jobs:
-#   build_test
-#     runs-on: windows-latest
-#     permissions:
-#       contents: write
-#     env:
-#       BUILD_TYPE: Release
-#     steps:
-#       - name: Build
-#         shell: bash
-#         run: |
-#           echo Hello >> ${{ env.BUILD_TYPE }}_1.txt
-#           echo World >> ${{ env.BUILD_TYPE }}_2.txt
-#       - name: Set Tag Name
-#         shell: bash
-#         run: |
-#           TAG=$(echo ${{ github.ref }} | sed 's/^refs\/tags\///')_windows
-#           echo "TAG=$TAG" >> $GITHUB_ENV
-#       - name: Release
-#         uses: ncipollo/release-action@v1
-#         if: startsWith(github.ref, 'refs/tags/')
-#         with:
-#           artifacts: "${{ env.BUILD_TYPE }}_1.txt, ${{ env.BUILD_TYPE }}_2.txt"
-#           tag: ${{ env.TAG }}

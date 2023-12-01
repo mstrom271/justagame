@@ -18,32 +18,19 @@ GLWidget::~GLWidget() {
     doneCurrent();
 }
 
-QOpenGLShader *GLWidget::load_vshader(QString filename) {
-    QOpenGLShader *vshader = new QOpenGLShader(QOpenGLShader::Vertex, this);
-    QFile file_vshader(filename);
-    if (file_vshader.open(QIODevice::ReadOnly)) {
-        qint64 fileSize = file_vshader.size();
+QOpenGLShader *GLWidget::load_shader(QString filename,
+                                     QOpenGLShader::ShaderType type) {
+    QOpenGLShader *shader = new QOpenGLShader(type, this);
+    QFile file_shader(filename);
+    if (file_shader.open(QIODevice::ReadOnly)) {
+        qint64 fileSize = file_shader.size();
         QByteArray fileContent(fileSize, '\0');
-        qint64 bytesRead = file_vshader.read(fileContent.data(), fileSize);
-        vshader->compileSourceCode(fileContent.constData());
+        qint64 bytesRead = file_shader.read(fileContent.data(), fileSize);
+        shader->compileSourceCode(fileContent.constData());
     } else
-        qDebug() << "Unable to open: " << file_vshader.fileName();
+        qDebug() << "Unable to open: " << file_shader.fileName();
 
-    return vshader;
-}
-
-QOpenGLShader *GLWidget::load_fshader(QString filename) {
-    QOpenGLShader *fshader = new QOpenGLShader(QOpenGLShader::Fragment, this);
-    QFile file_fshader(filename);
-    if (file_fshader.open(QIODevice::ReadOnly)) {
-        qint64 fileSize = file_fshader.size();
-        QByteArray fileContent(fileSize, '\0');
-        qint64 bytesRead = file_fshader.read(fileContent.data(), fileSize);
-        fshader->compileSourceCode(fileContent.constData());
-    } else
-        qDebug() << "Unable to open: " << file_fshader.fileName();
-
-    return fshader;
+    return shader;
 }
 
 void GLWidget::initializeGL() {
@@ -75,11 +62,11 @@ void GLWidget::initializeGL() {
         world.addMesh(std::move(mesh));
     }
 
-    QOpenGLShader *vshader = load_vshader(":/rcc/vertex_shader.glsl");
-    QOpenGLShader *fshader = load_fshader(":/rcc/fragment_shader.glsl");
     program = new QOpenGLShaderProgram;
-    program->addShader(vshader);
-    program->addShader(fshader);
+    program->addShader(
+        load_shader(":/rcc/vertex_shader.glsl", QOpenGLShader::Vertex));
+    program->addShader(
+        load_shader(":/rcc/fragment_shader.glsl", QOpenGLShader::Fragment));
     program->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
     program->bindAttributeLocation("texCoord", PROGRAM_TEXCOORD_ATTRIBUTE);
     program->link();
@@ -87,13 +74,11 @@ void GLWidget::initializeGL() {
     program->setUniformValue("texture", 0);
     program->release();
 
-    QOpenGLShader *vshader_debug =
-        load_vshader(":/rcc/vertex_shader_debug.glsl");
-    QOpenGLShader *fshader_debug =
-        load_fshader(":/rcc/fragment_shader_debug.glsl");
     program_debug = new QOpenGLShaderProgram;
-    program_debug->addShader(vshader_debug);
-    program_debug->addShader(fshader_debug);
+    program_debug->addShader(
+        load_shader(":/rcc/vertex_shader_debug.glsl", QOpenGLShader::Vertex));
+    program_debug->addShader(load_shader(":/rcc/fragment_shader_debug.glsl",
+                                         QOpenGLShader::Fragment));
     program_debug->bindAttributeLocation("vertex", PROGRAM_VERTEX_ATTRIBUTE);
     program_debug->link();
 
