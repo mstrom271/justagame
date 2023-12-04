@@ -23,7 +23,10 @@ class world2d {
     void precalc(bool isDebug = false) {
         for (auto object : objects) {
             object->precalcCollisionModel();
-            object->precalcVBO(isDebug);
+            if (isDebug)
+                object->precalcCollisionModel_VBO();
+
+            object->precalcDisplayModel_VBO();
         }
     }
 

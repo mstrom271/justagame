@@ -36,7 +36,7 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 
   private:
     world2d world;
-    QMatrix4x4 matrix;
+    QMatrix4x4 world_matrix;
     QOpenGLShaderProgram *program = nullptr, *program_debug = nullptr;
     QPoint oldPos;
     QTimer *timer;

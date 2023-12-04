@@ -4,10 +4,11 @@
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLTexture>
-#include <cmath>
 #include <ctime>
-#include <numbers>
 #include <random>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 GLWidget::GLWidget(QWidget *widget){};
 
@@ -46,7 +47,7 @@ void GLWidget::initializeGL() {
     for (int i = 0; i < 10; i++) {
         double pos_x = (dis(gen) * 60 - 30) * coef;
         double pos_y = dis(gen) * 60 - 30;
-        double angle = dis(gen) * 2 * std::numbers::pi_v<float>;
+        double angle = dis(gen) * 2 * M_PI;
 
         double width = 5 + dis(gen) * 20;
         double height = 5 + dis(gen) * 20;
@@ -106,17 +107,16 @@ void GLWidget::updateMatrix() {
     else
         y_coef = float(height()) / width();
 
-    matrix.setToIdentity();
-    matrix.ortho(-world.getCamera().getCameraWidth() / 2 * x_coef,
-                 +world.getCamera().getCameraWidth() / 2 * x_coef,
-                 -world.getCamera().getCameraHeight() / 2 * y_coef,
-                 +world.getCamera().getCameraHeight() / 2 * y_coef, -15.0f,
-                 30.0f);
-    matrix.rotate(-world.getCamera().getAngle() /
-                      (2 * std::numbers::pi_v<float>)*360,
-                  0, 0, 1);
-    matrix.translate(-world.getCamera().getPosX(),
-                     -world.getCamera().getPosY());
+    world_matrix.setToIdentity();
+    world_matrix.ortho(-world.getCamera().getCameraWidth() / 2 * x_coef,
+                       +world.getCamera().getCameraWidth() / 2 * x_coef,
+                       -world.getCamera().getCameraHeight() / 2 * y_coef,
+                       +world.getCamera().getCameraHeight() / 2 * y_coef,
+                       -15.0f, 30.0f);
+    world_matrix.rotate(-world.getCamera().getAngle() / (2 * M_PI) * 360, 0, 0,
+                        1);
+    world_matrix.translate(-world.getCamera().getPosX(),
+                           -world.getCamera().getPosY());
 }
 
 void GLWidget::paintGL() {
@@ -132,21 +132,20 @@ void GLWidget::paintGL() {
     updateMatrix();
     world.precalc(true);
     for (auto object : world) {
-        QMatrix4x4 model_matrix = matrix;
-        model_matrix.translate(object->getPos().x(), object->getPos().y());
-        model_matrix.rotate(
-            object->getAngle() / (2 * std::numbers::pi_v<float>)*360, 0, 0, 1);
+        // QMatrix4x4 model_matrix = matrix;
+        // model_matrix.translate(object->getPos().x(), object->getPos().y());
+        // model_matrix.rotate(object->getAngle() / (2 * M_PI) * 360, 0, 0, 1);
 
         // Draw frame only for debug
         program_debug->bind();
-        object->getVBODebug()->bind();
+        object->getCollisionModel_VBO()->bind();
         program_debug->setUniformValue("externalColor", QVector4D(0, 1, 0, 1));
-        program_debug->setUniformValue("matrix", model_matrix);
+        program_debug->setUniformValue("matrix", world_matrix);
         program_debug->enableAttributeArray(PROGRAM_DEBUG_VERTEX_ATTRIBUTE);
         program_debug->setAttributeBuffer(PROGRAM_DEBUG_VERTEX_ATTRIBUTE,
                                           GL_FLOAT, 0, 2, 2 * sizeof(GLfloat));
-        glDrawArrays(GL_LINES, 0, object->getVBODebug()->size());
-        object->getVBODebug()->release();
+        glDrawArrays(GL_LINES, 0, object->getCollisionModel_VBO()->size());
+        object->getCollisionModel_VBO()->release();
         program_debug->release();
     }
 
@@ -157,7 +156,7 @@ void GLWidget::paintGL() {
     // for (auto &mesh : world) {
     //     QMatrix4x4 model_matrix = matrix;
     //     model_matrix.translate(mesh.getPosX(), mesh.getPosY());
-    //     model_matrix.rotate(mesh.getAngle() / (2 * std::numbers::pi_v<float>)
+    //     model_matrix.rotate(mesh.getAngle() / (2 * M_PI)
     //     * 360, 0, 0, 1);
 
     //     // Draw triangles with texture

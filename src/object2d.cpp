@@ -1,11 +1,12 @@
 #include "object2d.h"
 #include "math2d.h"
-#include <cmath>
 #include <iterator>
 #include <list>
-#include <numbers>
 #include <unordered_map>
 #include <vector>
+
+#define _USE_MATH_DEFINES
+#include <cmath>
 
 object2d::~object2d() {
     for (auto p : collisionModel)
@@ -14,9 +15,9 @@ object2d::~object2d() {
     for (auto p : collisionModel_precalc)
         delete p;
 
-    delete draw_texture;
-    delete draw_vbo;
-    delete draw_vboDebug;
+    delete displayModel_texture;
+    delete displayModel_VBO;
+    delete collisionModel_VBO;
 }
 
 vec2d object2d::getPos() const { return pos; }
@@ -39,8 +40,9 @@ void object2d::setAngleSpeed(double newAngleSpeed) {
 
 void object2d::add(primitive2d *p) {
     collisionModel.push_back(p);
+
     collisionModel_expired = true;
-    draw_expired = true;
+    displayModel_VBO_expired = true;
 }
 
 void object2d::explosion(vec2d local_point) {
@@ -62,8 +64,9 @@ void object2d::explosion(vec2d local_point) {
             r->setPos(transform(r->getPos()));
         }
     }
+
     collisionModel_expired = true;
-    draw_expired = true;
+    displayModel_VBO_expired = true;
 }
 
 void object2d::precalcCollisionModel() {
@@ -80,29 +83,33 @@ void object2d::precalcCollisionModel() {
         collisionModel_precalc.back()->precalc(matrix);
     }
 
-    collisionModelBBox.setIsInit(false);
+    bool collisionModelBBox_init = false;
     for (auto p : collisionModel_precalc) {
-        collisionModelBBox += p->getBBox();
+        if (collisionModelBBox_init)
+            collisionModel_bBox += p->getBBox();
+        else {
+            collisionModel_bBox = p->getBBox();
+            collisionModelBBox_init = true;
+        }
     }
-
+    collisionModel_VBO_expired = true;
     collisionModel_expired = false;
 }
 
-QOpenGLTexture *object2d::getTexture() { return draw_texture; }
-QOpenGLBuffer *object2d::getVBO() { return draw_vbo; }
-QOpenGLBuffer *object2d::getVBODebug() { return draw_vboDebug; }
+QOpenGLTexture *object2d::getDisplayModel_texture() {
+    return displayModel_texture;
+}
+QOpenGLBuffer *object2d::getDisplayModel_VBO() { return displayModel_VBO; }
+QOpenGLBuffer *object2d::getCollisionModel_VBO() { return collisionModel_VBO; }
 
 void pushCircle(std::vector<float> &vertices, circle2d *p) {
-    for (float angle = 0; angle < 2 * std::numbers::pi_v<float>;
-         angle += std::numbers::pi_v<float> / 4) {
+    for (float angle = 0; angle < 2 * M_PI; angle += M_PI / 4) {
         vertices.push_back(p->getPos().x() + std::cos(angle) * p->getRadius());
         vertices.push_back(p->getPos().y() + std::sin(angle) * p->getRadius());
         vertices.push_back(p->getPos().x() +
-                           std::cos(angle + std::numbers::pi_v<float> / 4) *
-                               p->getRadius());
+                           std::cos(angle + M_PI / 4) * p->getRadius());
         vertices.push_back(p->getPos().y() +
-                           std::sin(angle + std::numbers::pi_v<float> / 4) *
-                               p->getRadius());
+                           std::sin(angle + M_PI / 4) * p->getRadius());
     }
 }
 
@@ -149,42 +156,70 @@ void pushRectangle(std::vector<float> &vertices, rectangle2d *p) {
     vertices.push_back(p1.y());
 }
 
-void object2d::precalcVBO(bool isDebug) {
-    if (draw_expired) {
-        delete draw_vbo;
-        delete draw_vboDebug;
-        draw_vbo = nullptr;
-        draw_vboDebug = nullptr;
+void pushBBox(std::vector<float> &vertices, const bBox &bbox) {
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMinY());
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMinY());
 
-        if (isDebug) {
-            std::vector<float> vertices;
-            for (auto p : collisionModel) {
-                if (typeid(*p) == typeid(circle2d))
-                    pushCircle(vertices, static_cast<circle2d *>(p));
-                else if (typeid(*p) == typeid(line2d))
-                    pushLine(vertices, static_cast<line2d *>(p));
-                else if (typeid(*p) == typeid(rectangle2d))
-                    pushRectangle(vertices, static_cast<rectangle2d *>(p));
-            }
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMinY());
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMaxY());
 
-            draw_vboDebug = new QOpenGLBuffer();
-            draw_vboDebug->create();
-            draw_vboDebug->bind();
-            draw_vboDebug->allocate(vertices.size() * sizeof(GLfloat));
-            draw_vboDebug->write(0, vertices.data(),
-                                 vertices.size() * sizeof(GLfloat));
-            draw_vboDebug->release();
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMaxY());
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMaxY());
+
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMaxY());
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMinY());
+}
+
+void object2d::precalcCollisionModel_VBO() {
+    if (collisionModel_VBO_expired) {
+        delete collisionModel_VBO;
+        collisionModel_VBO = nullptr;
+
+        std::vector<float> vertices;
+        for (auto p : collisionModel_precalc) {
+            if (typeid(*p) == typeid(circle2d))
+                pushCircle(vertices, static_cast<circle2d *>(p));
+            else if (typeid(*p) == typeid(line2d))
+                pushLine(vertices, static_cast<line2d *>(p));
+            else if (typeid(*p) == typeid(rectangle2d))
+                pushRectangle(vertices, static_cast<rectangle2d *>(p));
         }
+        pushBBox(vertices, collisionModel_bBox);
+
+        collisionModel_VBO = new QOpenGLBuffer();
+        collisionModel_VBO->create();
+        collisionModel_VBO->bind();
+        collisionModel_VBO->allocate(vertices.size() * sizeof(GLfloat));
+        collisionModel_VBO->write(0, vertices.data(),
+                                  vertices.size() * sizeof(GLfloat));
+        collisionModel_VBO->release();
+
+        collisionModel_VBO_expired = false;
+    }
+}
+
+void object2d::precalcDisplayModel_VBO() {
+    if (displayModel_VBO_expired) {
+        delete displayModel_VBO;
+        displayModel_VBO = nullptr;
 
         // TODO: precalcVBO for nonDebug
 
-        draw_expired = false;
+        displayModel_VBO_expired = false;
     }
 }
 
 bBox object2d::getBBox() {
     precalcCollisionModel();
-    return collisionModelBBox;
+    return collisionModel_bBox;
 }
 
 // bool object2d::collisionDetection(object2d &obj, collisionObjectsPoint

@@ -15,19 +15,21 @@ class object2d {
     vec2d speed;
     double angleSpeed;
 
-    std::list<primitive2d *> collisionModel;
-    // precalc collision model  values in world coords
-    bool collisionModel_expired = true;
-    mat23 collisionModelMatrix;
-    std::list<primitive2d *> collisionModel_precalc;
-    bBox collisionModelBBox;
+    std::list<primitive2d *> collisionModel; // in local coords
 
-    // mesh2d
-    // precalc draw values in object coords
-    QOpenGLTexture *draw_texture = nullptr;
-    QOpenGLBuffer *draw_vbo = nullptr;
-    QOpenGLBuffer *draw_vboDebug = nullptr;
-    bool draw_expired = true;
+    // precalc collisionModel  values
+    mat23 collisionModel_matrix;
+    std::list<primitive2d *> collisionModel_precalc; // in world coords
+    bBox collisionModel_bBox;
+    bool collisionModel_expired = true;
+
+    QOpenGLBuffer *collisionModel_VBO = nullptr;
+    bool collisionModel_VBO_expired = true;
+
+    // precalc displayModel values in object coords
+    QOpenGLTexture *displayModel_texture = nullptr;
+    QOpenGLBuffer *displayModel_VBO = nullptr;
+    bool displayModel_VBO_expired = true;
 
   public:
     object2d() = default;
@@ -50,22 +52,23 @@ class object2d {
     void add(primitive2d *p);
     void explosion(vec2d local_point);
 
-    QOpenGLTexture *getTexture();
-    QOpenGLBuffer *getVBO();
-    QOpenGLBuffer *getVBODebug();
+    QOpenGLTexture *getDisplayModel_texture();
+    QOpenGLBuffer *getDisplayModel_VBO();
+    QOpenGLBuffer *getCollisionModel_VBO();
     void precalcCollisionModel();
-    void precalcVBO(bool isDebug = false);
+    void precalcCollisionModel_VBO();
+    void precalcDisplayModel_VBO();
     bBox getBBox();
 };
 
 bool collisionDetection(const object2d &obj1, const object2d &obj2,
                         collisionObjectsPoint &point);
 
-// fabrics
-void makeCircle2d(object2d *obj, const vec2d &pos, double radius);
-void makeLine2d(object2d *obj, const vec2d &p1, const vec2d &p2);
-void makeRectangle2d(object2d *obj, const vec2d &pos, const vec2d &size,
-                     double angle);
+// // fabrics
+// void makeCircle2d(object2d *obj, const vec2d &pos, double radius);
+// void makeLine2d(object2d *obj, const vec2d &p1, const vec2d &p2);
+// void makeRectangle2d(object2d *obj, const vec2d &pos, const vec2d &size,
+//                      double angle);
 
 class collisionObjectsPoint {
     object2d *obj1, *obj2;

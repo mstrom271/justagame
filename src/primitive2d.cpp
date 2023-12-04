@@ -5,61 +5,39 @@
 // bBox
 // ----------------------
 
-bBox::bBox(const vec2d &pos, double radius)
-    : isInit(true), pos(pos), radius(radius) {}
-bBox::bBox(double x, double y, double radius)
-    : isInit(true), pos(x, y), radius(radius) {}
-double bBox::getRadius() const { return radius; }
-void bBox::setRadius(double newRadius) { radius = newRadius; }
-vec2d bBox::getPos() const { return pos; }
-void bBox::setPos(const vec2d &newPos) { pos = newPos; }
-bool bBox::getIsInit() const { return isInit; }
-void bBox::setIsInit(bool newIsInit) { isInit = newIsInit; }
+bBox::bBox(double minX, double minY, double maxX, double maxY)
+    : minX(minX), minY(minY), maxX(maxX), maxY(maxY) {}
+double bBox::getMinX() const { return minX; }
+double bBox::getMinY() const { return minY; }
+double bBox::getMaxX() const { return maxX; }
+double bBox::getMaxY() const { return maxY; }
+void bBox::setMinX(double value) { minX = value; }
+void bBox::setMinY(double value) { minY = value; }
+void bBox::setMaxX(double value) { maxX = value; }
+void bBox::setMaxY(double value) { maxY = value; }
 
 bBox bBox::operator+(const bBox &other) const {
-    if (!isInit && other.isInit)
-        return other;
-    else if (!other.isInit)
-        return *this;
-
-    double left = std::min(pos.x() - radius, other.pos.x() - other.radius);
-    double top = std::min(pos.y() - radius, other.pos.y() - other.radius);
-
-    double right = std::max(pos.x() + radius, other.pos.x() + other.radius);
-    double bottom = std::max(pos.y() + radius, other.pos.y() + other.radius);
-
-    vec2d half_diff((right - left) / 2, (bottom - top) / 2);
-    return bBox(vec2d(left, top) + half_diff,
-                std::max(half_diff.x(), half_diff.y()));
+    return bBox(std::min(getMinX(), other.getMinX()),
+                std::min(getMinY(), other.getMinY()),
+                std::max(getMaxX(), other.getMaxX()),
+                std::max(getMaxY(), other.getMaxY()));
 }
 
 bBox &bBox::operator+=(const bBox &other) {
-    if (!isInit && other.isInit) {
-        *this = other;
-        return *this;
-    } else if (!other.isInit)
-        return *this;
-
-    double left = std::min(pos.x() - radius, other.pos.x() - other.radius);
-    double top = std::min(pos.y() - radius, other.pos.y() - other.radius);
-
-    double right = std::max(pos.x() + radius, other.pos.x() + other.radius);
-    double bottom = std::max(pos.y() + radius, other.pos.y() + other.radius);
-
-    vec2d half_diff((right - left) / 2, (bottom - top) / 2);
-    *this = bBox(vec2d(left, top) + half_diff,
-                 std::max(half_diff.x(), half_diff.y()));
+    setMinX(std::min(getMinX(), other.getMinX()));
+    setMinY(std::min(getMinY(), other.getMinY()));
+    setMaxX(std::max(getMaxX(), other.getMaxX()));
+    setMaxY(std::max(getMaxY(), other.getMaxY()));
 
     return *this;
 }
 
 bool bBox::intersect(const bBox &other) const {
-    if (isInit && other.isInit &&
-        std::abs(pos.x() - other.pos.x()) <= radius + other.radius &&
-        std::abs(pos.y() - other.pos.y()) <= radius + other.radius)
-        return true;
+    if (getMaxX() < other.getMinX() || getMinX() > other.getMaxX() ||
+        getMaxY() < other.getMinY() || getMinY() > other.getMaxY())
+        return false;
 
-    return false;
+    return true;
 }
 
 // ----------------------
@@ -78,7 +56,10 @@ void circle2d::precalc(const mat23 &matrix) { pos *= matrix; }
 
 primitive2d *circle2d::clone() const { return new circle2d(*this); }
 
-bBox circle2d::getBBox() const { return bBox(pos, radius); }
+bBox circle2d::getBBox() const {
+    return bBox(pos.x() - radius, pos.y() - radius, pos.x() + radius,
+                pos.y() + radius);
+}
 
 // ----------------------
 // line2d
@@ -99,9 +80,8 @@ void line2d::precalc(const mat23 &matrix) {
 primitive2d *line2d::clone() const { return new line2d(*this); }
 
 bBox line2d::getBBox() const {
-    vec2d half_diff((p2 - p1) / 2);
-    return bBox(half_diff + p1,
-                std::max(std::abs(half_diff.x()), std::abs(half_diff.y())));
+    return bBox(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()),
+                std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()));
 }
 
 // ----------------------
@@ -148,16 +128,10 @@ void rectangle2d::precalc(const mat23 &matrix) {
 primitive2d *rectangle2d::clone() const { return new rectangle2d(*this); }
 
 bBox rectangle2d::getBBox() const {
-    auto rangeX = {p1.x(), p2.x(), p3.x(), p4.x()};
-    auto [left, right] =
-        std::minmax_element(std::begin(rangeX), std::end(rangeX));
+    auto [minX, maxX] = std::minmax({p1.x(), p2.x(), p3.x(), p4.x()});
+    auto [minY, maxY] = std::minmax({p1.y(), p2.y(), p3.y(), p4.y()});
 
-    auto rangeY = {p1.y(), p2.y(), p3.y(), p4.y()};
-    auto [top, bottom] =
-        std::minmax_element(std::begin(rangeY), std::end(rangeY));
-
-    return bBox(vec2d((*left + *right) / 2, (*top + *bottom) / 2),
-                std::max(*right - *left, *bottom - *top) / 2);
+    return bBox(minX, maxX, minY, maxY);
 }
 
 // ----------------------

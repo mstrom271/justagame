@@ -3,10 +3,8 @@
 #include "math2d.h"
 
 class bBox {
-    bool isInit = false;
-
-    vec2d pos; // center
-    double radius;
+    double minX, minY;
+    double maxX, maxY;
 
   public:
     bBox() = default;
@@ -16,14 +14,15 @@ class bBox {
     bBox &operator=(bBox &&rect) noexcept = default;
     ~bBox() = default;
 
-    bBox(const vec2d &pos, double radius);
-    bBox(double x, double y, double radius);
-    vec2d getPos() const;
-    void setPos(const vec2d &newPos);
-    double getRadius() const;
-    void setRadius(double newRadius);
-    bool getIsInit() const;
-    void setIsInit(bool newIsInit);
+    bBox(double minX, double minY, double maxX, double maxY);
+    double getMinX() const;
+    double getMinY() const;
+    double getMaxX() const;
+    double getMaxY() const;
+    void setMinX(double value);
+    void setMinY(double value);
+    void setMaxX(double value);
+    void setMaxY(double value);
 
     bBox operator+(const bBox &other) const;
     bBox &operator+=(const bBox &other);
