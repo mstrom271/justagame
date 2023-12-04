@@ -76,6 +76,8 @@ void circle2d::setRadius(double newRadius) { radius = newRadius; }
 
 void circle2d::precalc(const mat23 &matrix) { pos *= matrix; }
 
+primitive2d *circle2d::clone() const { return new circle2d(*this); }
+
 bBox circle2d::getBBox() const { return bBox(pos, radius); }
 
 // ----------------------
@@ -93,6 +95,8 @@ void line2d::precalc(const mat23 &matrix) {
     p1 *= matrix;
     p2 *= matrix;
 }
+
+primitive2d *line2d::clone() const { return new line2d(*this); }
 
 bBox line2d::getBBox() const {
     vec2d half_diff((p2 - p1) / 2);
@@ -140,6 +144,8 @@ void rectangle2d::precalc(const mat23 &matrix) {
     p3 *= rectM;
     p4 *= rectM;
 }
+
+primitive2d *rectangle2d::clone() const { return new rectangle2d(*this); }
 
 bBox rectangle2d::getBBox() const {
     auto rangeX = {p1.x(), p2.x(), p3.x(), p4.x()};

@@ -56,6 +56,7 @@ class primitive2d {
     virtual ~primitive2d() = default;
 
     virtual void precalc(const mat23 &matrix) = 0;
+    virtual primitive2d *clone() const = 0;
     virtual bBox getBBox() const = 0;
 };
 
@@ -72,6 +73,7 @@ class circle2d : public primitive2d {
     void setRadius(double newRadius);
 
     void precalc(const mat23 &matrix) override;
+    primitive2d *clone() const override;
     bBox getBBox() const override;
 };
 
@@ -87,6 +89,7 @@ class line2d : public primitive2d {
     void setP2(const vec2d &newP2);
 
     void precalc(const mat23 &matrix) override;
+    primitive2d *clone() const override;
     bBox getBBox() const override;
 };
 
@@ -117,6 +120,7 @@ class rectangle2d : public primitive2d {
     void setP4(const vec2d &newP4);
 
     void precalc(const mat23 &matrix) override;
+    primitive2d *clone() const override;
     bBox getBBox() const override;
 };
 

@@ -1,7 +1,7 @@
 #version 330 core
 
-layout(location = 0) in vec2 inPosition; // Входные координаты вершин
-uniform mat4 matrix; // Матрица преобразования
+layout(location = 2) in vec2 inPosition;
+uniform mat4 matrix;
 
 void main()
 {
