@@ -6,6 +6,7 @@
 #include <QOpenGLTexture>
 #include <cmath>
 #include <ctime>
+#include <numbers>
 #include <random>
 
 GLWidget::GLWidget(QWidget *widget){};
@@ -45,7 +46,7 @@ void GLWidget::initializeGL() {
     for (int i = 0; i < 10; i++) {
         double pos_x = (dis(gen) * 60 - 30) * coef;
         double pos_y = dis(gen) * 60 - 30;
-        double angle = dis(gen) * 2 * M_PI;
+        double angle = dis(gen) * 2 * std::numbers::pi_v<float>;
 
         double width = 5 + dis(gen) * 20;
         double height = 5 + dis(gen) * 20;
@@ -111,7 +112,9 @@ void GLWidget::updateMatrix() {
                  -world.getCamera().getCameraHeight() / 2 * y_coef,
                  +world.getCamera().getCameraHeight() / 2 * y_coef, -15.0f,
                  30.0f);
-    matrix.rotate(-world.getCamera().getAngle() / (2 * M_PI) * 360, 0, 0, 1);
+    matrix.rotate(-world.getCamera().getAngle() /
+                      (2 * std::numbers::pi_v<float>)*360,
+                  0, 0, 1);
     matrix.translate(-world.getCamera().getPosX(),
                      -world.getCamera().getPosY());
 }
@@ -131,7 +134,8 @@ void GLWidget::paintGL() {
     for (auto object : world) {
         QMatrix4x4 model_matrix = matrix;
         model_matrix.translate(object->getPos().x(), object->getPos().y());
-        model_matrix.rotate(object->getAngle() / (2 * M_PI) * 360, 0, 0, 1);
+        model_matrix.rotate(
+            object->getAngle() / (2 * std::numbers::pi_v<float>)*360, 0, 0, 1);
 
         // Draw frame only for debug
         program_debug->bind();
@@ -153,7 +157,8 @@ void GLWidget::paintGL() {
     // for (auto &mesh : world) {
     //     QMatrix4x4 model_matrix = matrix;
     //     model_matrix.translate(mesh.getPosX(), mesh.getPosY());
-    //     model_matrix.rotate(mesh.getAngle() / (2 * M_PI) * 360, 0, 0, 1);
+    //     model_matrix.rotate(mesh.getAngle() / (2 * std::numbers::pi_v<float>)
+    //     * 360, 0, 0, 1);
 
     //     // Draw triangles with texture
     //     program->bind();
@@ -256,58 +261,6 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
         oldPos = event->pos();
         update();
     }
-    // auto size = qMin(width(), height());
-    // vec2d camera_point((world.getCamera().getCameraWidth() / size) *
-    //                        (-width() / 2 + event->pos().rx()),
-    //                    (world.getCamera().getCameraHeight() / size) *
-    //                        (height() / 2 - event->pos().ry()));
-
-    // vec2d world_point = camera_point;
-    // world_point.rotate(world.getCamera().getAngle());
-    // world_point.translate(world.getCamera().getPosX(),
-    //                       world.getCamera().getPosY());
-
-    // mesh2d *nearest_mesh = nullptr;
-    // double length = 0;
-    // for (auto &mesh : world) {
-    //     double new_length =
-    //         (vec2d(mesh.getPosX(), mesh.getPosY()) - world_point).length();
-    //     if (nearest_mesh == nullptr || new_length < length) {
-    //         nearest_mesh = &mesh;
-    //         length = new_length;
-    //     }
-    // }
-
-    // if (event->buttons() & Qt::LeftButton) {
-    //     vec2d local_point = camera_point;
-    //     local_point.rotate(world.getCamera().getAngle());
-    //     local_point.translate(world.getCamera().getPosX(),
-    //                           world.getCamera().getPosY());
-
-    //     local_point.translate(-nearest_mesh->getPosX(),
-    //                           -nearest_mesh->getPosY());
-    //     local_point.rotate(-nearest_mesh->getAngle());
-
-    //     nearest_mesh->explosion(local_point);
-    //     update();
-    // } else if (event->buttons() & Qt::RightButton) {
-    //     auto camera_v = event->pos() - oldPos;
-    //     vec2d world_v = vec2d(camera_v);
-    //     world_v.rotate(-world.getCamera().getAngle());
-
-    //     auto size = qMin(width(), height());
-    //     nearest_mesh->setPosX(nearest_mesh->getPosX() +
-    //                           world_v.x() *
-    //                           world.getCamera().getCameraWidth() /
-    //                               size);
-    //     nearest_mesh->setPosY(nearest_mesh->getPosY() -
-    //                           world_v.y() *
-    //                               world.getCamera().getCameraHeight() /
-    //                               size);
-
-    //     oldPos = event->pos();
-    //     update();
-    // }
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent * /* event */) { emit clicked(); }

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <iterator>
 #include <list>
+#include <numbers>
 #include <unordered_map>
 #include <vector>
 
@@ -92,13 +93,16 @@ QOpenGLBuffer *object2d::getVBO() { return draw_vbo; }
 QOpenGLBuffer *object2d::getVBODebug() { return draw_vboDebug; }
 
 void pushCircle(std::vector<float> &vertices, circle2d *p) {
-    for (float angle = 0; angle < 2 * M_PI; angle += M_PI / 4) {
+    for (float angle = 0; angle < 2 * std::numbers::pi_v<float>;
+         angle += std::numbers::pi_v<float> / 4) {
         vertices.push_back(p->getPos().x() + std::cos(angle) * p->getRadius());
         vertices.push_back(p->getPos().y() + std::sin(angle) * p->getRadius());
         vertices.push_back(p->getPos().x() +
-                           std::cos(angle + M_PI / 4) * p->getRadius());
+                           std::cos(angle + std::numbers::pi_v<float> / 4) *
+                               p->getRadius());
         vertices.push_back(p->getPos().y() +
-                           std::sin(angle + M_PI / 4) * p->getRadius());
+                           std::sin(angle + std::numbers::pi_v<float> / 4) *
+                               p->getRadius());
     }
 }
 
