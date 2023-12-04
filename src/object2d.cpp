@@ -1,12 +1,10 @@
 #include "object2d.h"
 #include "math2d.h"
+#include <cmath>
 #include <iterator>
 #include <list>
 #include <unordered_map>
 #include <vector>
-
-#define _USE_MATH_DEFINES
-#include <cmath>
 
 object2d::~object2d() {
     for (auto p : collisionModel)
@@ -103,13 +101,13 @@ QOpenGLBuffer *object2d::getDisplayModel_VBO() { return displayModel_VBO; }
 QOpenGLBuffer *object2d::getCollisionModel_VBO() { return collisionModel_VBO; }
 
 void pushCircle(std::vector<float> &vertices, circle2d *p) {
-    for (float angle = 0; angle < 2 * M_PI; angle += M_PI / 4) {
+    for (float angle = 0; angle < 2 * pi; angle += pi / 4) {
         vertices.push_back(p->getPos().x() + std::cos(angle) * p->getRadius());
         vertices.push_back(p->getPos().y() + std::sin(angle) * p->getRadius());
         vertices.push_back(p->getPos().x() +
-                           std::cos(angle + M_PI / 4) * p->getRadius());
+                           std::cos(angle + pi / 4) * p->getRadius());
         vertices.push_back(p->getPos().y() +
-                           std::sin(angle + M_PI / 4) * p->getRadius());
+                           std::sin(angle + pi / 4) * p->getRadius());
     }
 }
 
