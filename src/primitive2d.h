@@ -1,6 +1,7 @@
 #pragma once
 
 #include "math2d.h"
+#include <vector>
 
 class bBox {
     double minX, minY;
@@ -23,6 +24,8 @@ class bBox {
     void setMinY(double value);
     void setMaxX(double value);
     void setMaxY(double value);
+    double width() const;
+    double height() const;
 
     bBox operator+(const bBox &other) const;
     bBox &operator+=(const bBox &other);
@@ -146,3 +149,8 @@ bool collisionPrimitives(const rectangle2d &r1, const rectangle2d &r2,
 
 bool collisionPrimitives(const primitive2d &p1, const primitive2d &p2,
                          collisionPrimitivesPoint &point);
+
+void pushCircleVertices(std::vector<float> &vertices, const circle2d *p);
+void pushLineVertices(std::vector<float> &vertices, const line2d *p);
+void pushRectangleVertices(std::vector<float> &vertices, const rectangle2d *p);
+void pushBBoxVertices(std::vector<float> &vertices, const bBox &bbox);

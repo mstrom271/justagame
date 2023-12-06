@@ -15,6 +15,8 @@ void bBox::setMinX(double value) { minX = value; }
 void bBox::setMinY(double value) { minY = value; }
 void bBox::setMaxX(double value) { maxX = value; }
 void bBox::setMaxY(double value) { maxY = value; }
+double bBox::width() const { return getMaxX() - getMinX(); }
+double bBox::height() const { return getMaxY() - getMinY(); }
 
 bBox bBox::operator+(const bBox &other) const {
     return bBox(std::min(getMinX(), other.getMinX()),
@@ -80,8 +82,8 @@ void line2d::precalc(const mat23 &matrix) {
 primitive2d *line2d::clone() const { return new line2d(*this); }
 
 bBox line2d::getBBox() const {
-    return bBox(std::min(p1.x(), p2.x()), std::max(p1.x(), p2.x()),
-                std::min(p1.y(), p2.y()), std::max(p1.y(), p2.y()));
+    return bBox(std::min(p1.x(), p2.x()), std::min(p1.y(), p2.y()),
+                std::max(p1.x(), p2.x()), std::max(p1.y(), p2.y()));
 }
 
 // ----------------------
@@ -131,7 +133,7 @@ bBox rectangle2d::getBBox() const {
     auto [minX, maxX] = std::minmax({p1.x(), p2.x(), p3.x(), p4.x()});
     auto [minY, maxY] = std::minmax({p1.y(), p2.y(), p3.y(), p4.y()});
 
-    return bBox(minX, maxX, minY, maxY);
+    return bBox(minX, minY, maxX, maxY);
 }
 
 // ----------------------
@@ -448,4 +450,84 @@ bool collisionPrimitives(const primitive2d &p1, const primitive2d &p2,
                                        point);
     }
     return false;
+}
+
+// ----------------------
+// collisionPrimitives
+// ----------------------
+
+void pushCircleVertices(std::vector<float> &vertices, const circle2d *p) {
+    for (float angle = 0; angle < 2 * pi; angle += pi / 4) {
+        vertices.push_back(p->getPos().x() + std::cos(angle) * p->getRadius());
+        vertices.push_back(p->getPos().y() + std::sin(angle) * p->getRadius());
+        vertices.push_back(p->getPos().x() +
+                           std::cos(angle + pi / 4) * p->getRadius());
+        vertices.push_back(p->getPos().y() +
+                           std::sin(angle + pi / 4) * p->getRadius());
+    }
+}
+
+void pushLineVertices(std::vector<float> &vertices, const line2d *p) {
+    vertices.push_back(p->getP1().x());
+    vertices.push_back(p->getP1().y());
+    vertices.push_back(p->getP2().x());
+    vertices.push_back(p->getP2().y());
+}
+
+void pushRectangleVertices(std::vector<float> &vertices, const rectangle2d *p) {
+    vec2d p1 = vec2d(+p->getSize().x() / 2, +p->getSize().y() / 2);
+    vec2d p2 = vec2d(+p->getSize().x() / 2, -p->getSize().y() / 2);
+    vec2d p3 = vec2d(-p->getSize().x() / 2, -p->getSize().y() / 2);
+    vec2d p4 = vec2d(-p->getSize().x() / 2, +p->getSize().y() / 2);
+
+    mat23 rectM;
+    rectM.rotate(p->getAngle());
+    rectM.translate(p->getPos());
+
+    p1 *= rectM;
+    p2 *= rectM;
+    p3 *= rectM;
+    p4 *= rectM;
+
+    vertices.push_back(p1.x());
+    vertices.push_back(p1.y());
+    vertices.push_back(p2.x());
+    vertices.push_back(p2.y());
+
+    vertices.push_back(p2.x());
+    vertices.push_back(p2.y());
+    vertices.push_back(p3.x());
+    vertices.push_back(p3.y());
+
+    vertices.push_back(p3.x());
+    vertices.push_back(p3.y());
+    vertices.push_back(p4.x());
+    vertices.push_back(p4.y());
+
+    vertices.push_back(p4.x());
+    vertices.push_back(p4.y());
+    vertices.push_back(p1.x());
+    vertices.push_back(p1.y());
+}
+
+void pushBBoxVertices(std::vector<float> &vertices, const bBox &bbox) {
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMinY());
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMinY());
+
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMinY());
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMaxY());
+
+    vertices.push_back(bbox.getMaxX());
+    vertices.push_back(bbox.getMaxY());
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMaxY());
+
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMaxY());
+    vertices.push_back(bbox.getMinX());
+    vertices.push_back(bbox.getMinY());
 }

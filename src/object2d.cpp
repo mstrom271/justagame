@@ -1,4 +1,5 @@
 #include "object2d.h"
+#include "kdtree2d.h"
 #include "math2d.h"
 #include <cmath>
 #include <iterator>
@@ -15,7 +16,6 @@ object2d::~object2d() {
 
     delete displayModel_texture;
     delete displayModel_VBO;
-    delete collisionModel_VBO;
 }
 
 vec2d object2d::getPos() const { return pos; }
@@ -90,135 +90,46 @@ void object2d::precalcCollisionModel() {
             collisionModelBBox_init = true;
         }
     }
-    collisionModel_VBO_expired = true;
+
     collisionModel_expired = false;
+}
+
+void object2d::precalcCollisionModel_KDTree(KDTree2d *kdtree) {
+    for (auto p : collisionModel_precalc)
+        kdtree->addItem(Item{p->getBBox(), this, p});
 }
 
 QOpenGLTexture *object2d::getDisplayModel_texture() {
     return displayModel_texture;
 }
 QOpenGLBuffer *object2d::getDisplayModel_VBO() { return displayModel_VBO; }
-QOpenGLBuffer *object2d::getCollisionModel_VBO() { return collisionModel_VBO; }
 
-void pushCircle(std::vector<float> &vertices, circle2d *p) {
-    for (float angle = 0; angle < 2 * pi; angle += pi / 4) {
-        vertices.push_back(p->getPos().x() + std::cos(angle) * p->getRadius());
-        vertices.push_back(p->getPos().y() + std::sin(angle) * p->getRadius());
-        vertices.push_back(p->getPos().x() +
-                           std::cos(angle + pi / 4) * p->getRadius());
-        vertices.push_back(p->getPos().y() +
-                           std::sin(angle + pi / 4) * p->getRadius());
+void object2d::precalcDebug_VBO(std::vector<float> &vertices) {
+    for (auto p : collisionModel_precalc) {
+        if (typeid(*p) == typeid(circle2d))
+            pushCircleVertices(vertices, static_cast<circle2d *>(p));
+        else if (typeid(*p) == typeid(line2d))
+            pushLineVertices(vertices, static_cast<line2d *>(p));
+        else if (typeid(*p) == typeid(rectangle2d))
+            pushRectangleVertices(vertices, static_cast<rectangle2d *>(p));
+        // pushBBoxVertices(vertices, p->getBBox());
     }
+    // pushBBoxVertices(vertices, collisionModel_bBox);
 }
 
-void pushLine(std::vector<float> &vertices, line2d *p) {
-    vertices.push_back(p->getP1().x());
-    vertices.push_back(p->getP1().y());
-    vertices.push_back(p->getP2().x());
-    vertices.push_back(p->getP2().y());
+void object2d::precalcDisplayModel() {
+    if (!displayModel_VBO_expired)
+        return;
+
+    delete displayModel_VBO;
+    displayModel_VBO = nullptr;
+
+    // TODO: precalcVBO for nonDebug
+
+    displayModel_VBO_expired = false;
 }
 
-void pushRectangle(std::vector<float> &vertices, rectangle2d *p) {
-    vec2d p1 = vec2d(+p->getSize().x() / 2, +p->getSize().y() / 2);
-    vec2d p2 = vec2d(+p->getSize().x() / 2, -p->getSize().y() / 2);
-    vec2d p3 = vec2d(-p->getSize().x() / 2, -p->getSize().y() / 2);
-    vec2d p4 = vec2d(-p->getSize().x() / 2, +p->getSize().y() / 2);
-
-    mat23 rectM;
-    rectM.rotate(p->getAngle());
-    rectM.translate(p->getPos());
-
-    p1 *= rectM;
-    p2 *= rectM;
-    p3 *= rectM;
-    p4 *= rectM;
-
-    vertices.push_back(p1.x());
-    vertices.push_back(p1.y());
-    vertices.push_back(p2.x());
-    vertices.push_back(p2.y());
-
-    vertices.push_back(p2.x());
-    vertices.push_back(p2.y());
-    vertices.push_back(p3.x());
-    vertices.push_back(p3.y());
-
-    vertices.push_back(p3.x());
-    vertices.push_back(p3.y());
-    vertices.push_back(p4.x());
-    vertices.push_back(p4.y());
-
-    vertices.push_back(p4.x());
-    vertices.push_back(p4.y());
-    vertices.push_back(p1.x());
-    vertices.push_back(p1.y());
-}
-
-void pushBBox(std::vector<float> &vertices, const bBox &bbox) {
-    vertices.push_back(bbox.getMinX());
-    vertices.push_back(bbox.getMinY());
-    vertices.push_back(bbox.getMaxX());
-    vertices.push_back(bbox.getMinY());
-
-    vertices.push_back(bbox.getMaxX());
-    vertices.push_back(bbox.getMinY());
-    vertices.push_back(bbox.getMaxX());
-    vertices.push_back(bbox.getMaxY());
-
-    vertices.push_back(bbox.getMaxX());
-    vertices.push_back(bbox.getMaxY());
-    vertices.push_back(bbox.getMinX());
-    vertices.push_back(bbox.getMaxY());
-
-    vertices.push_back(bbox.getMinX());
-    vertices.push_back(bbox.getMaxY());
-    vertices.push_back(bbox.getMinX());
-    vertices.push_back(bbox.getMinY());
-}
-
-void object2d::precalcCollisionModel_VBO() {
-    if (collisionModel_VBO_expired) {
-        delete collisionModel_VBO;
-        collisionModel_VBO = nullptr;
-
-        std::vector<float> vertices;
-        for (auto p : collisionModel_precalc) {
-            if (typeid(*p) == typeid(circle2d))
-                pushCircle(vertices, static_cast<circle2d *>(p));
-            else if (typeid(*p) == typeid(line2d))
-                pushLine(vertices, static_cast<line2d *>(p));
-            else if (typeid(*p) == typeid(rectangle2d))
-                pushRectangle(vertices, static_cast<rectangle2d *>(p));
-        }
-        pushBBox(vertices, collisionModel_bBox);
-
-        collisionModel_VBO = new QOpenGLBuffer();
-        collisionModel_VBO->create();
-        collisionModel_VBO->bind();
-        collisionModel_VBO->allocate(vertices.size() * sizeof(GLfloat));
-        collisionModel_VBO->write(0, vertices.data(),
-                                  vertices.size() * sizeof(GLfloat));
-        collisionModel_VBO->release();
-
-        collisionModel_VBO_expired = false;
-    }
-}
-
-void object2d::precalcDisplayModel_VBO() {
-    if (displayModel_VBO_expired) {
-        delete displayModel_VBO;
-        displayModel_VBO = nullptr;
-
-        // TODO: precalcVBO for nonDebug
-
-        displayModel_VBO_expired = false;
-    }
-}
-
-bBox object2d::getBBox() {
-    precalcCollisionModel();
-    return collisionModel_bBox;
-}
+bBox object2d::getBBox() { return collisionModel_bBox; }
 
 // bool object2d::collisionDetection(object2d &obj, collisionObjectsPoint
 // &point) {

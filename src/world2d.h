@@ -1,16 +1,35 @@
 #pragma once
 
 #include "camera2d.h"
+#include "kdtree2d.h"
 #include "mesh2d.h"
 #include "object2d.h"
+#include <QOpenGLBuffer>
+#include <QOpenGLTexture>
+#include <QVector4D>
 #include <list>
+
+constexpr std::size_t debug_VBO_number = 2;
 
 class world2d {
     camera2d camera;
     std::list<object2d *> objects;
 
+    QOpenGLBuffer *debug_VBO_array[debug_VBO_number]{nullptr, nullptr};
+    QVector4D debug_colors_array[debug_VBO_number]{QVector4D(0, 1, 0, 1),
+                                                   QVector4D(1, 1, 1, 1)};
+
+    bBox collisionModel_bBox;
+    KDTree2d *kdtree = nullptr;
+
   public:
     world2d() = default;
+    ~world2d() {
+        for (size_t i = 0; i < debug_VBO_number; i++) {
+            delete debug_VBO_array[i];
+            debug_VBO_array[i] = nullptr;
+        }
+    }
 
     void add(object2d *object) { objects.push_back(object); }
 
@@ -21,13 +40,51 @@ class world2d {
     camera2d getCamera() { return camera; }
 
     void precalc(bool isDebug = false) {
-        for (auto object : objects) {
+        for (auto debug_VBO : debug_VBO_array) {
+            delete debug_VBO;
+            debug_VBO = nullptr;
+        }
+
+        std::vector<float> vertices[debug_VBO_number];
+
+        bool collisionModelBBox_init = false;
+        for (auto object : *this) {
             object->precalcCollisionModel();
             if (isDebug)
-                object->precalcCollisionModel_VBO();
+                object->precalcDebug_VBO(vertices[1]);
+            object->precalcDisplayModel();
 
-            object->precalcDisplayModel_VBO();
+            // bBox
+            if (collisionModelBBox_init)
+                collisionModel_bBox += object->getBBox();
+            else {
+                collisionModel_bBox = object->getBBox();
+                collisionModelBBox_init = true;
+            }
         }
+
+        delete kdtree;
+        kdtree = new KDTree2d(collisionModel_bBox);
+        for (auto object : objects)
+            object->precalcCollisionModel_KDTree(kdtree);
+        kdtree->precalcDebug_VBO(vertices[0]);
+
+        for (std::size_t i = 0; i < debug_VBO_number; i++) {
+            debug_VBO_array[i] = new QOpenGLBuffer();
+            debug_VBO_array[i]->create();
+            debug_VBO_array[i]->bind();
+            debug_VBO_array[i]->allocate(vertices[i].size() * sizeof(GLfloat));
+            debug_VBO_array[i]->write(0, vertices[i].data(),
+                                      vertices[i].size() * sizeof(GLfloat));
+            debug_VBO_array[i]->release();
+        }
+    }
+
+    QOpenGLBuffer *getDebug_VBO(std::size_t index) {
+        return debug_VBO_array[index];
+    }
+    QVector4D getDebug_color(std::size_t index) {
+        return debug_colors_array[index];
     }
 
     void destroy() { objects.clear(); }

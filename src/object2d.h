@@ -7,6 +7,7 @@
 #include <list>
 
 class collisionObjectsPoint;
+class KDTree2d;
 
 class object2d {
     vec2d pos;
@@ -22,9 +23,6 @@ class object2d {
     std::list<primitive2d *> collisionModel_precalc; // in world coords
     bBox collisionModel_bBox;
     bool collisionModel_expired = true;
-
-    QOpenGLBuffer *collisionModel_VBO = nullptr;
-    bool collisionModel_VBO_expired = true;
 
     // precalc displayModel values in object coords
     QOpenGLTexture *displayModel_texture = nullptr;
@@ -54,10 +52,15 @@ class object2d {
 
     QOpenGLTexture *getDisplayModel_texture();
     QOpenGLBuffer *getDisplayModel_VBO();
-    QOpenGLBuffer *getCollisionModel_VBO();
+
     void precalcCollisionModel();
-    void precalcCollisionModel_VBO();
-    void precalcDisplayModel_VBO();
+
+    void precalcDebug_VBO(std::vector<float> &vertices);
+    void precalcDisplayModel();
+
+    void precalcCollisionModel_KDTree(KDTree2d *kdtree);
+    // void precalcDisplayModel_KDTree(KDTree2d *kdtree);
+
     bBox getBBox();
 };
 

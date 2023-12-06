@@ -37,7 +37,7 @@ QOpenGLShader *GLWidget::load_shader(QString filename,
 void GLWidget::initializeGL() {
     initializeOpenGLFunctions();
 
-    world.setCamera(camera2d{0, 0, 0, 60, 60});
+    world.setCamera(camera2d{0, 0, 0, 100, 100});
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -65,7 +65,8 @@ void GLWidget::initializeGL() {
             }
         object->setPos({pos_x, pos_y});
         // object->add(new line2d({-3, -6}, {-1, 4}));
-        // object->add(new rectangle2d({0, 0}, {2, 3}, 1));
+        // object->add(
+        //     new rectangle2d({0, height / 2 + 10}, {width, height / 10}, 1));
         world.add(object);
     }
 
@@ -129,66 +130,35 @@ void GLWidget::paintGL() {
         object->setAngle(object->getAngle() + 0.01);
 
     updateMatrix();
-    world.precalc(true);
-    for (auto object : world) {
-        // QMatrix4x4 model_matrix = matrix;
-        // model_matrix.translate(object->getPos().x(), object->getPos().y());
-        // model_matrix.rotate(object->getAngle() / (2 * pi) * 360, 0, 0, 1);
+    bool isDebug = true;
+    world.precalc(isDebug);
+    // for (auto object : world) {
+    //     QMatrix4x4 model_matrix = matrix;
+    //     model_matrix.translate(object->getPos().x(), object->getPos().y());
+    //     model_matrix.rotate(object->getAngle() / (2 * pi) * 360, 0, 0, 1);
+    // }
 
-        // Draw frame only for debug
+    // Draw frame only for debug
+    if (isDebug) {
         program_debug->bind();
-        object->getCollisionModel_VBO()->bind();
-        program_debug->setUniformValue("externalColor", QVector4D(0, 1, 0, 1));
-        program_debug->setUniformValue("matrix", world_matrix);
-        program_debug->enableAttributeArray(PROGRAM_DEBUG_VERTEX_ATTRIBUTE);
-        program_debug->setAttributeBuffer(PROGRAM_DEBUG_VERTEX_ATTRIBUTE,
-                                          GL_FLOAT, 0, 2, 2 * sizeof(GLfloat));
-        glDrawArrays(GL_LINES, 0, object->getCollisionModel_VBO()->size());
-        object->getCollisionModel_VBO()->release();
+
+        for (size_t i = 0; i < debug_VBO_number; i++) {
+            world.getDebug_VBO(i)->bind();
+            program_debug->setUniformValue("externalColor",
+                                           world.getDebug_color(i));
+            program_debug->setUniformValue("matrix", world_matrix);
+            program_debug->enableAttributeArray(PROGRAM_DEBUG_VERTEX_ATTRIBUTE);
+            program_debug->setAttributeBuffer(PROGRAM_DEBUG_VERTEX_ATTRIBUTE,
+                                              GL_FLOAT, 0, 2,
+                                              2 * sizeof(GLfloat));
+            glDrawArrays(GL_LINES, 0, world.getDebug_VBO(i)->size());
+            world.getDebug_VBO(i)->release();
+        }
         program_debug->release();
+
+        // qDebug() << elapsedTimer->elapsed();
     }
 
-    // for (auto &mesh : world)
-    //     mesh.setAngle(mesh.getAngle() + 0.01);
-
-    // world.precalcDebug();
-    // for (auto &mesh : world) {
-    //     QMatrix4x4 model_matrix = matrix;
-    //     model_matrix.translate(mesh.getPosX(), mesh.getPosY());
-    //     model_matrix.rotate(mesh.getAngle() / (2 * pi)
-    //     * 360, 0, 0, 1);
-
-    //     // Draw triangles with texture
-    //     program->bind();
-    //     mesh.getTexture()->bind();
-    //     mesh.getVBO()->bind();
-    //     program->setUniformValue("matrix", model_matrix);
-    //     program->enableAttributeArray(PROGRAM_VERTEX_ATTRIBUTE);
-    //     program->enableAttributeArray(PROGRAM_TEXCOORD_ATTRIBUTE);
-    //     program->setAttributeBuffer(PROGRAM_VERTEX_ATTRIBUTE, GL_FLOAT, 0, 2,
-    //                                 4 * sizeof(GLfloat));
-    //     program->setAttributeBuffer(PROGRAM_TEXCOORD_ATTRIBUTE, GL_FLOAT,
-    //                                 2 * sizeof(GLfloat), 2,
-    //                                 4 * sizeof(GLfloat));
-    //     glDrawArrays(GL_TRIANGLES, 0, mesh.getVBO()->size());
-    //     mesh.getVBO()->release();
-    //     mesh.getTexture()->release();
-    //     program->release();
-
-    //     // Draw frame only for debug
-    //     program_debug->bind();
-    //     mesh.getVBODebug()->bind();
-    //     program_debug->setUniformValue("externalColor", QVector4D(0, 1, 0,
-    //     1)); program_debug->setUniformValue("matrix", model_matrix);
-    //     program_debug->enableAttributeArray(PROGRAM_DEBUG_VERTEX_ATTRIBUTE);
-    //     program_debug->setAttributeBuffer(PROGRAM_DEBUG_VERTEX_ATTRIBUTE,
-    //                                       GL_FLOAT, 0, 2, 2 *
-    //                                       sizeof(GLfloat));
-    //     glDrawArrays(GL_LINES, 0, mesh.getVBODebug()->size());
-    //     mesh.getVBODebug()->release();
-    //     program_debug->release();
-    // }
-    qDebug() << elapsedTimer->elapsed();
     elapsedTimer->restart();
 }
 
