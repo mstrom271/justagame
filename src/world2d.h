@@ -67,6 +67,7 @@ class world2d {
         kdtree = new KDTree2d(collisionModel_bBox);
         for (auto object : objects)
             object->precalcCollisionModel_KDTree(kdtree);
+        kdtree->collisionDetection();
         kdtree->precalcDebug_VBO(vertices[0]);
 
         for (std::size_t i = 0; i < debug_VBO_number; i++) {

@@ -1,18 +1,6 @@
 #include "kdtree2d.h"
 #include <QDebug>
 
-float bBoxIntersectCoef(const bBox &bigBBox, const bBox &smallBBox) {
-    float minX = std::min(bigBBox.getMinX(), smallBBox.getMinX());
-    float maxX = std::max(bigBBox.getMaxX(), smallBBox.getMaxX());
-    float diffX = bigBBox.width() + smallBBox.width() - (maxX - minX);
-
-    float minY = std::min(bigBBox.getMinY(), smallBBox.getMinY());
-    float maxY = std::max(bigBBox.getMaxY(), smallBBox.getMaxY());
-    float diffY = bigBBox.height() + smallBBox.height() - (maxY - minY);
-
-    return std::max(bigBBox.width() / diffX, bigBBox.height() / diffY);
-}
-
 enum class SplitType { Leaf1, Leaf2 };
 bBox splitLeaf(const bBox &bbox, std::size_t depth, SplitType type) {
     if (type == SplitType::Leaf1) {
@@ -43,18 +31,26 @@ KDTree2d::~KDTree2d() {
 }
 
 void KDTree2d::addItem(const Item &item, std::size_t depth) {
-    if (bBoxIntersectCoef(bbox, item.bbox) > bboxCoefMin && depth < depthMax) {
-        if (leaf1 == nullptr)
-            leaf1 = new KDTree2d(splitLeaf(bbox, depth, SplitType::Leaf1));
-        if (leaf2 == nullptr)
-            leaf2 = new KDTree2d(splitLeaf(bbox, depth, SplitType::Leaf2));
+    list.push_back(item);
 
-        if (item.bbox.intersect(leaf1->bbox))
-            leaf1->addItem(item, depth + 1);
-        if (item.bbox.intersect(leaf2->bbox))
-            leaf2->addItem(item, depth + 1);
-    } else
-        list.push_back(item);
+    if (((list.size() > 1 &&
+          list[list.size() - 1].object != list[list.size() - 2].object) ||
+         (leaf1 != nullptr && leaf2 != nullptr)) &&
+        depth < depthMax) {
+
+        while (!list.empty()) {
+            if (leaf1 == nullptr)
+                leaf1 = new KDTree2d(splitLeaf(bbox, depth, SplitType::Leaf1));
+            if (leaf2 == nullptr)
+                leaf2 = new KDTree2d(splitLeaf(bbox, depth, SplitType::Leaf2));
+
+            if (list.back().bbox.intersect(leaf1->bbox))
+                leaf1->addItem(list.back(), depth + 1);
+            if (list.back().bbox.intersect(leaf2->bbox))
+                leaf2->addItem(list.back(), depth + 1);
+            list.pop_back();
+        }
+    }
 }
 
 void KDTree2d::precalcDebug_VBO(std::vector<float> &vertices) {
@@ -63,4 +59,53 @@ void KDTree2d::precalcDebug_VBO(std::vector<float> &vertices) {
         leaf1->precalcDebug_VBO(vertices);
     if (leaf2)
         leaf2->precalcDebug_VBO(vertices);
+}
+
+void KDTree2d::parseTree(std::vector<std::pair<Item, Item>> &result) {
+    for (std::size_t i = 0; i < list.size(); i++)
+        for (std::size_t j = i + 1; j < list.size(); j++)
+            if (list[i].object < list[j].object)
+                result.push_back({list[i], list[j]});
+            else if (list[i].object > list[j].object)
+                result.push_back({list[j], list[i]});
+
+    if (leaf1)
+        leaf1->parseTree(result);
+    if (leaf2)
+        leaf2->parseTree(result);
+}
+
+void KDTree2d::collisionDetection() {
+    std::vector<std::pair<Item, Item>> result;
+    parseTree(result);
+    std::sort(
+        begin(result), end(result),
+        [](const std::pair<Item, Item> &i, const std::pair<Item, Item> &j) {
+            return i.first.object < j.first.object ||
+
+                   i.first.object == j.first.object &&
+                       i.first.primitive < j.first.primitive ||
+
+                   i.first.object == j.first.object &&
+                       i.first.primitive == j.first.primitive &&
+                       i.second.object < j.second.object ||
+
+                   i.first.object == j.first.object &&
+                       i.first.primitive == j.first.primitive &&
+                       i.second.object == j.second.object &&
+                       i.second.primitive < j.second.primitive;
+        });
+    auto uniqueEnd = std::unique(
+        begin(result), end(result),
+        [](const std::pair<Item, Item> &i, const std::pair<Item, Item> &j) {
+            return i.first.object == j.first.object &&
+                   i.first.primitive == j.first.primitive &&
+                   i.second.object == j.second.object &&
+                   i.second.primitive == j.second.primitive;
+        });
+    result.erase(uniqueEnd, end(result));
+
+    // TODO
+
+    qDebug() << result.size();
 }

@@ -64,9 +64,10 @@ void GLWidget::initializeGL() {
                     std::min(width / grid_size_x, height / grid_size_y) / 2));
             }
         object->setPos({pos_x, pos_y});
-        // object->add(new line2d({-3, -6}, {-1, 4}));
-        // object->add(
-        //     new rectangle2d({0, height / 2 + 10}, {width, height / 10}, 1));
+        // object->add(new line2d({-width / 2, -height / 1.5},
+        //                        {width / 2, -height / 1.5}));
+        // object->add(new rectangle2d({0, height / 2}, {width, height / 10},
+        // 0));
         world.add(object);
     }
 

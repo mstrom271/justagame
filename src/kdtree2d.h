@@ -12,12 +12,10 @@ struct Item {
 };
 
 class KDTree2d {
+    static constexpr std::size_t depthMax = 15;
+
     bBox bbox;
-
-    static constexpr std::size_t depthMax = 10;
-    static constexpr float bboxCoefMin = 2.0f;
-
-    std::list<Item> list;
+    std::vector<Item> list;
 
     KDTree2d *leaf1 = nullptr;
     KDTree2d *leaf2 = nullptr;
@@ -28,4 +26,6 @@ class KDTree2d {
 
     void addItem(const Item &item, std::size_t depth = 0);
     void precalcDebug_VBO(std::vector<float> &vertices);
+    void parseTree(std::vector<std::pair<Item, Item>> &list);
+    void collisionDetection();
 };

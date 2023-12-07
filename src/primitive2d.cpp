@@ -475,39 +475,25 @@ void pushLineVertices(std::vector<float> &vertices, const line2d *p) {
 }
 
 void pushRectangleVertices(std::vector<float> &vertices, const rectangle2d *p) {
-    vec2d p1 = vec2d(+p->getSize().x() / 2, +p->getSize().y() / 2);
-    vec2d p2 = vec2d(+p->getSize().x() / 2, -p->getSize().y() / 2);
-    vec2d p3 = vec2d(-p->getSize().x() / 2, -p->getSize().y() / 2);
-    vec2d p4 = vec2d(-p->getSize().x() / 2, +p->getSize().y() / 2);
+    vertices.push_back(p->P1().x());
+    vertices.push_back(p->P1().y());
+    vertices.push_back(p->P2().x());
+    vertices.push_back(p->P2().y());
 
-    mat23 rectM;
-    rectM.rotate(p->getAngle());
-    rectM.translate(p->getPos());
+    vertices.push_back(p->P2().x());
+    vertices.push_back(p->P2().y());
+    vertices.push_back(p->P3().x());
+    vertices.push_back(p->P3().y());
 
-    p1 *= rectM;
-    p2 *= rectM;
-    p3 *= rectM;
-    p4 *= rectM;
+    vertices.push_back(p->P3().x());
+    vertices.push_back(p->P3().y());
+    vertices.push_back(p->P4().x());
+    vertices.push_back(p->P4().y());
 
-    vertices.push_back(p1.x());
-    vertices.push_back(p1.y());
-    vertices.push_back(p2.x());
-    vertices.push_back(p2.y());
-
-    vertices.push_back(p2.x());
-    vertices.push_back(p2.y());
-    vertices.push_back(p3.x());
-    vertices.push_back(p3.y());
-
-    vertices.push_back(p3.x());
-    vertices.push_back(p3.y());
-    vertices.push_back(p4.x());
-    vertices.push_back(p4.y());
-
-    vertices.push_back(p4.x());
-    vertices.push_back(p4.y());
-    vertices.push_back(p1.x());
-    vertices.push_back(p1.y());
+    vertices.push_back(p->P4().x());
+    vertices.push_back(p->P4().y());
+    vertices.push_back(p->P1().x());
+    vertices.push_back(p->P1().y());
 }
 
 void pushBBoxVertices(std::vector<float> &vertices, const bBox &bbox) {
