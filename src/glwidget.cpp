@@ -127,7 +127,7 @@ void GLWidget::paintGL() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    for (auto object : world)
+    for (auto object : world.getObjects())
         object->setAngle(object->getAngle() + 0.01);
 
     updateMatrix();
@@ -167,11 +167,7 @@ void GLWidget::resizeGL(int width, int height) {}
 
 void GLWidget::keyPressEvent(QKeyEvent *event) {
     // if (event->key() == Qt::Key_Right) {
-    //     world.begin()->setAngle(world.begin()->getAngle() - 0.1);
-    //     update();
     // } else if (event->key() == Qt::Key_Left) {
-    //     world.begin()->setAngle(world.begin()->getAngle() + 0.1);
-    //     update();
     // }
 
     // QWidget::keyPressEvent(event);
@@ -193,7 +189,7 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
 
     object2d *nearest_object = nullptr;
     double length = 0;
-    for (auto object : world) {
+    for (auto object : world.getObjects()) {
         double new_length =
             (vec2d(object->getPos().x(), object->getPos().y()) - world_point)
                 .length();

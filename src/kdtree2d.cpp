@@ -74,38 +74,3 @@ void KDTree2d::parseTree(std::vector<std::pair<Item, Item>> &result) {
     if (leaf2)
         leaf2->parseTree(result);
 }
-
-void KDTree2d::collisionDetection() {
-    std::vector<std::pair<Item, Item>> result;
-    parseTree(result);
-    std::sort(
-        begin(result), end(result),
-        [](const std::pair<Item, Item> &i, const std::pair<Item, Item> &j) {
-            return i.first.object < j.first.object ||
-
-                   i.first.object == j.first.object &&
-                       i.first.primitive < j.first.primitive ||
-
-                   i.first.object == j.first.object &&
-                       i.first.primitive == j.first.primitive &&
-                       i.second.object < j.second.object ||
-
-                   i.first.object == j.first.object &&
-                       i.first.primitive == j.first.primitive &&
-                       i.second.object == j.second.object &&
-                       i.second.primitive < j.second.primitive;
-        });
-    auto uniqueEnd = std::unique(
-        begin(result), end(result),
-        [](const std::pair<Item, Item> &i, const std::pair<Item, Item> &j) {
-            return i.first.object == j.first.object &&
-                   i.first.primitive == j.first.primitive &&
-                   i.second.object == j.second.object &&
-                   i.second.primitive == j.second.primitive;
-        });
-    result.erase(uniqueEnd, end(result));
-
-    // TODO
-
-    qDebug() << result.size();
-}

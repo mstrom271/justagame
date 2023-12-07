@@ -4,7 +4,6 @@
 #include <cmath>
 #include <iterator>
 #include <list>
-#include <unordered_map>
 #include <vector>
 
 object2d::~object2d() {
@@ -131,112 +130,25 @@ void object2d::precalcDisplayModel() {
 
 bBox object2d::getBBox() { return collisionModel_bBox; }
 
-// bool object2d::collisionDetection(object2d &obj, collisionObjectsPoint
-// &point) {
-//     precalc();
-//     obj.precalc();
-
-//     if (!getBBox().intersect(obj.getBBox()))
-//         return false;
-
-//     std::list<collisionPrimitivesPoint> collisionPrimitivesPoints;
-//     for (auto i = std::cbegin(precalcPrimitives);
-//          i != std::cend(precalcPrimitives); i++) {
-//         for (auto j = std::cbegin(obj.precalcPrimitives);
-//              j != std::cend(obj.precalcPrimitives); j++) {
-//             collisionPrimitivesPoint pointP;
-//             if (i->collisionDetection(*j, pointP)) {
-//                 collisionPrimitivesPoints.push_back(pointP);
-//             }
-//         }
-//     }
-
-//     if (!collisionPrimitivesPoints.empty()) {
-//         vec2d _pos, normal1, normal2;
-//         double depth = 0;
-//         bool firstPass = true;
-//         for (auto &point : collisionPrimitivesPoints) {
-//             if (firstPass) {
-//                 _pos = point.getPos();
-//                 normal1 = point.getNormal1();
-//                 normal2 = point.getNormal2();
-//                 depth = point.getDepth();
-//                 firstPass = false;
-//             } else {
-//                 _pos += point.getPos();
-//                 normal1 += point.getNormal1();
-//                 normal2 += point.getNormal2();
-//                 depth = std::max(point.getDepth(), depth);
-//             }
-//         }
-//         _pos /= collisionPrimitivesPoints.size();
-//         //        normal1 /= collisionPrimitivesPoints.size();
-//         //        normal2 /= collisionPrimitivesPoints.size();
-//         normal1.norm();
-//         normal2.norm();
-
-//         point =
-//             collisionObjectsPoint(this, &obj, _pos, normal1, normal2, depth);
-//         return true;
-//     }
-
-//     return false;
-// }
-
-// // fabrics
-// void makeCircle2d(object2d *obj, const vec2d &pos, double radius) {
-//     obj->add(new circle2d(pos, radius));
-// }
-
-// void makeLine2d(object2d *obj, const vec2d &p1, const vec2d &p2) {
-//     obj->add(new line2d(p1, p2));
-// }
-
-// void makeRectangle2d(object2d *obj, const vec2d &pos, const vec2d &size,
-//                      double angle) {
-//     //    vec2d a = vec2d(pos.x() - size.x(), pos.y() - size.y());
-//     //    vec2d b = vec2d(pos.x() - size.x(), pos.y() + size.y());
-//     //    vec2d c = vec2d(pos.x() + size.x(), pos.y() + size.y());
-//     //    vec2d d = vec2d(pos.x() + size.x(), pos.y() - size.y());
-
-//     //    a.rotate(angle);
-//     //    b.rotate(angle);
-//     //    c.rotate(angle);
-//     //    d.rotate(angle);
-
-//     //    obj->add(new line2d(a, b));
-//     //    obj->add(new line2d(b, c));
-//     //    obj->add(new line2d(c, d));
-//     //    obj->add(new line2d(d, a));
-//     obj->add(new rectangle2d(pos, size, angle));
-// }
-
-// collisionObjectsPoint::collisionObjectsPoint(object2d *obj1, object2d *obj2,
-//                                              const vec2d &pos,
-//                                              const vec2d &normal1,
-//                                              const vec2d &normal2, double
-//                                              depth)
-//     : obj1(obj1), obj2(obj2), pos(pos), normal1(normal1), normal2(normal2),
-//       depth(depth) {}
-// object2d *collisionObjectsPoint::getObj1() const { return obj1; }
-// void collisionObjectsPoint::setObj1(object2d *newObj1) { obj1 = newObj1; }
-// object2d *collisionObjectsPoint::getObj2() const { return obj2; }
-// void collisionObjectsPoint::setObj2(object2d *newObj2) { obj2 = newObj2; }
-// vec2d collisionObjectsPoint::getPos() const { return pos; }
-// void collisionObjectsPoint::setPos(const vec2d &newPos) { pos = newPos; }
-// vec2d collisionObjectsPoint::getNormal1() const { return normal1; }
-// void collisionObjectsPoint::setNormal1(const vec2d &newNormal1) {
-//     normal1 = newNormal1;
-// }
-// vec2d collisionObjectsPoint::getNormal2() const { return normal2; }
-// void collisionObjectsPoint::setNormal2(const vec2d &newNormal2) {
-//     normal2 = newNormal2;
-// }
-// double collisionObjectsPoint::getDepth() const { return depth; }
-// void collisionObjectsPoint::setDepth(double newDepth) { depth = newDepth; }
-
-// void collisionObjectsPoint::draw(QPainter &painter) const {
-//     painter.drawEllipse(pos, 20, 20);
-//     painter.drawLine(obj1->getPos(), obj1->getPos() + normal1 * 20);
-//     painter.drawLine(obj2->getPos(), obj2->getPos() + normal2 * 20);
-// }
+collisionObjectsPoint::collisionObjectsPoint(object2d *obj1, object2d *obj2,
+                                             const vec2d &pos,
+                                             const vec2d &normal1,
+                                             const vec2d &normal2, double depth)
+    : obj1(obj1), obj2(obj2), pos(pos), normal1(normal1), normal2(normal2),
+      depth(depth) {}
+object2d *collisionObjectsPoint::getObj1() const { return obj1; }
+void collisionObjectsPoint::setObj1(object2d *newObj1) { obj1 = newObj1; }
+object2d *collisionObjectsPoint::getObj2() const { return obj2; }
+void collisionObjectsPoint::setObj2(object2d *newObj2) { obj2 = newObj2; }
+vec2d collisionObjectsPoint::getPos() const { return pos; }
+void collisionObjectsPoint::setPos(const vec2d &newPos) { pos = newPos; }
+vec2d collisionObjectsPoint::getNormal1() const { return normal1; }
+void collisionObjectsPoint::setNormal1(const vec2d &newNormal1) {
+    normal1 = newNormal1;
+}
+vec2d collisionObjectsPoint::getNormal2() const { return normal2; }
+void collisionObjectsPoint::setNormal2(const vec2d &newNormal2) {
+    normal2 = newNormal2;
+}
+double collisionObjectsPoint::getDepth() const { return depth; }
+void collisionObjectsPoint::setDepth(double newDepth) { depth = newDepth; }

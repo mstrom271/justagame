@@ -67,12 +67,6 @@ class object2d {
 bool collisionDetection(const object2d &obj1, const object2d &obj2,
                         collisionObjectsPoint &point);
 
-// // fabrics
-// void makeCircle2d(object2d *obj, const vec2d &pos, double radius);
-// void makeLine2d(object2d *obj, const vec2d &p1, const vec2d &p2);
-// void makeRectangle2d(object2d *obj, const vec2d &pos, const vec2d &size,
-//                      double angle);
-
 class collisionObjectsPoint {
     object2d *obj1, *obj2;
     vec2d pos;     // absolute coordinate system
@@ -102,6 +96,4 @@ class collisionObjectsPoint {
     void setNormal2(const vec2d &newNormal2);
     double getDepth() const;
     void setDepth(double newDepth1);
-
-    void draw(QPainter &painter) const;
 };
