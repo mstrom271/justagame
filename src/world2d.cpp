@@ -7,7 +7,10 @@ world2d::~world2d() {
     }
 }
 
-void world2d::add(object2d *object) { objects.push_back(object); }
+void world2d::addObject(object2d *object) { objects.push_back(object); }
+void world2d::addConnection(connection2d *connection) {
+    connections.push_back(connection);
+}
 
 std::list<object2d *> &world2d::getObjects() { return objects; }
 
@@ -19,8 +22,6 @@ void world2d::precalc(bool isDebug) {
         delete debug_VBO;
         debug_VBO = nullptr;
     }
-
-    resolveCollisions();
 
     std::vector<float> vertices[debug_VBO_number];
 
@@ -39,12 +40,13 @@ void world2d::precalc(bool isDebug) {
             collisionModelBBox_init = true;
         }
     }
+    for (auto connection : connections)
+        connection->precalcDebug_VBO(vertices[1]);
 
     delete kdtree;
     kdtree = new KDTree2d(collisionModel_bBox);
     for (auto object : objects)
         object->precalcCollisionModel_KDTree(kdtree);
-    collisionDetection();
     kdtree->precalcDebug_VBO(vertices[0]);
 
     for (std::size_t i = 0; i < debug_VBO_number; i++) {
@@ -118,16 +120,65 @@ void world2d::collisionDetection() {
     qDebug() << result.size() << " " << collisionPoints.size();
 }
 
-void world2d::resolveCollisions() {
+void world2d::collisionResolve() {
     for (auto &point : collisionPoints) {
         // pull out objects from each other
-        auto pullout_v = point.getObj1()->getPos() - point.getObj2()->getPos();
-        pullout_v.norm();
+        vec2d dist = point.getObj2()->getPos() - point.getObj1()->getPos();
+        dist.norm();
+        vec2d pullout_v1, pullout_v2;
+        if (dist.dotProduct(point.getNormal1()) > 0.1)
+            pullout_v1 = point.getNormal1();
+        else
+            pullout_v1 = dist;
 
-        point.getObj1()->setPos(point.getObj1()->getPos() +
-                                pullout_v * point.getDepth() / 2);
-        point.getObj2()->setPos(point.getObj2()->getPos() -
-                                pullout_v * point.getDepth() / 2);
+        if (dist.dotProduct(point.getNormal2()) < 0.1)
+            pullout_v2 = point.getNormal2();
+        else
+            pullout_v2 = -dist;
+
+        if (!point.getObj1()->getIsFixed() && !point.getObj2()->getIsFixed()) {
+            point.getObj1()->setPos(point.getObj1()->getPos() +
+                                    pullout_v2 * point.getDepth() / 2);
+            point.getObj2()->setPos(point.getObj2()->getPos() +
+                                    pullout_v1 * point.getDepth() / 2);
+        } else if (!point.getObj1()->getIsFixed()) {
+            point.getObj1()->setPos(point.getObj1()->getPos() +
+                                    pullout_v2 * point.getDepth());
+        } else if (!point.getObj2()->getIsFixed()) {
+            point.getObj2()->setPos(point.getObj2()->getPos() +
+                                    pullout_v1 * point.getDepth());
+        }
+    }
+}
+
+void world2d::update(double sec) {
+    for (auto obj : objects) {
+        obj->setPos(obj->getPos() + obj->getSpeed() * sec);
+        obj->setAngle(obj->getAngle() + obj->getAngleSpeed() * sec);
+
+        // slow down objects
+        constexpr double viscosity = 0.02;
+        obj->setSpeed(obj->getSpeed() * (1 - viscosity * sec));
+        obj->setAngleSpeed(obj->getAngleSpeed() * (1 - viscosity * sec));
+    }
+
+    for (auto connection : connections) {
+        vec2d point1 = connection->getPoint1();
+        vec2d point2 = connection->getPoint2();
+        if (!connection->getObject1())
+            point1 -= connection->getObject2()->getPos();
+        if (!connection->getObject2())
+            point2 -= connection->getObject1()->getPos();
+
+        vec2d dist = point2 - point1;
+        // double length = dist.length();
+        // dist.norm();
+        if (connection->getObject1())
+            connection->getObject1()->applyForce(dist.normed() * 0.02,
+                                                 connection->getPoint1());
+        if (connection->getObject2())
+            connection->getObject2()->applyForce(-dist.normed() * 0.02,
+                                                 connection->getPoint2());
     }
 }
 

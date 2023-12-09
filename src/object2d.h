@@ -16,6 +16,9 @@ class object2d {
     vec2d speed;
     double angleSpeed;
 
+    double weight = 1;
+    bool isFixed = false;
+
     std::list<primitive2d *> collisionModel; // in local coords
 
     // precalc collisionModel  values
@@ -47,8 +50,15 @@ class object2d {
     double getAngleSpeed() const;
     void setAngleSpeed(double newAngleSpeed);
 
+    bool getIsFixed() const;
+    void setIsFixed(bool newIsFixed);
+
+    double getWeight() const;
+    void setWeight(double newWeight);
+
     void add(primitive2d *p);
     void explosion(vec2d local_point);
+    void applyForce(vec2d force, vec2d forcePoint);
 
     QOpenGLTexture *getDisplayModel_texture();
     QOpenGLBuffer *getDisplayModel_VBO();

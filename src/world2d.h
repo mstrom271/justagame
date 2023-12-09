@@ -1,6 +1,7 @@
 #pragma once
 
 #include "camera2d.h"
+#include "connection2d.h"
 #include "kdtree2d.h"
 #include "mesh2d.h"
 #include "object2d.h"
@@ -15,6 +16,7 @@ constexpr std::size_t debug_VBO_number = 2;
 class world2d {
     camera2d camera;
     std::list<object2d *> objects;
+    std::list<connection2d *> connections;
 
     QOpenGLBuffer *debug_VBO_array[debug_VBO_number]{nullptr, nullptr};
     QVector4D debug_colors_array[debug_VBO_number]{QVector4D(0, 1, 0, 1),
@@ -28,37 +30,16 @@ class world2d {
     world2d() = default;
     ~world2d();
 
-    void add(object2d *object);
+    void addObject(object2d *object);
+    void addConnection(connection2d *connection);
     std::list<object2d *> &getObjects();
     void setCamera(const camera2d &newCamera);
     camera2d getCamera();
     void precalc(bool isDebug = false);
     void collisionDetection();
-    void resolveCollisions();
+    void collisionResolve();
+    void update(double sec);
     QOpenGLBuffer *getDebug_VBO(std::size_t index);
     QVector4D getDebug_color(std::size_t index);
     void destroy();
 };
-
-// class world2d {
-//     std::list<object2d> objects;
-//     std::list<collisionObjectsPoint> collisionPoints;
-
-//   public:
-//     ~world2d();
-
-//     void draw(QPainter &painter) const;
-//     object2d &add(const object2d &obj);
-//     object2d &add(object2d &&obj);
-
-//     void collisionDetection();
-//     void updateWorld(double sec);
-//     void resolveCollisions();
-// };
-
-// void updateWorld(double sec) {
-//     for (auto &obj : objects) {
-//         obj.setPos(obj.getPos() + obj.getSpeed() * sec);
-//         obj.setAngle(obj.getAngle() + obj.getAngleSpeed() * sec);
-//     }
-// }

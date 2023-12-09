@@ -34,6 +34,8 @@ QOpenGLShader *GLWidget::load_shader(QString filename,
     return shader;
 }
 
+connection2d *mouse_connection;
+
 void GLWidget::initializeGL() {
     initializeOpenGLFunctions();
 
@@ -47,6 +49,10 @@ void GLWidget::initializeGL() {
         double pos_x = (dis(gen) * 60 - 30) * coef;
         double pos_y = dis(gen) * 60 - 30;
         double angle = dis(gen) * 2 * pi;
+
+        double speedX = dis(gen) * 0.1 - 0.05;
+        double speedY = dis(gen) * 0.1 - 0.05;
+        double speedAngle = dis(gen) * 0.001 - 0.0005;
 
         double width = 5 + dis(gen) * 20;
         double height = 5 + dis(gen) * 20;
@@ -64,11 +70,25 @@ void GLWidget::initializeGL() {
                     std::min(width / grid_size_x, height / grid_size_y) / 2));
             }
         object->setPos({pos_x, pos_y});
+        object->setSpeed({speedX, speedY});
+        object->setAngleSpeed(speedAngle);
         // object->add(new line2d({-width / 2, -height / 1.5},
         //                        {width / 2, -height / 1.5}));
         // object->add(new rectangle2d({0, height / 2}, {width, height / 10},
         // 0));
-        world.add(object);
+        world.addObject(object);
+    }
+    mouse_connection =
+        new connection2d(world.getObjects().back(), nullptr, {3, 0}, {0, 0});
+    world.addConnection(mouse_connection);
+
+    object2d *object;
+    for (int i = 0; i < 4; i++) {
+        object = new object2d();
+        object->add(new rectangle2d({0, 0}, {5, 90}, pi / 2 * i));
+        object->setPos({50 * std::cos(pi / 2 * i), 50 * std::sin(pi / 2 * i)});
+        object->setIsFixed(true);
+        world.addObject(object);
     }
 
     program = new QOpenGLShaderProgram;
@@ -127,12 +147,19 @@ void GLWidget::paintGL() {
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
 
-    for (auto object : world.getObjects())
-        object->setAngle(object->getAngle() + 0.01);
+    // for (auto object : world.getObjects())
+    //     if (!object->getIsFixed())
+    //         object->setAngle(object->getAngle() + 0.01);
 
     updateMatrix();
+
+    world.update(1000.0 / std::max(elapsedTimer->elapsed(), (long long)100));
+    elapsedTimer->restart();
+
     bool isDebug = true;
     world.precalc(isDebug);
+    world.collisionDetection();
+    world.collisionResolve();
     // for (auto object : world) {
     //     QMatrix4x4 model_matrix = matrix;
     //     model_matrix.translate(object->getPos().x(), object->getPos().y());
@@ -156,11 +183,7 @@ void GLWidget::paintGL() {
             world.getDebug_VBO(i)->release();
         }
         program_debug->release();
-
-        // qDebug() << elapsedTimer->elapsed();
     }
-
-    elapsedTimer->restart();
 }
 
 void GLWidget::resizeGL(int width, int height) {}
@@ -190,16 +213,16 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     object2d *nearest_object = nullptr;
     double length = 0;
     for (auto object : world.getObjects()) {
-        double new_length =
-            (vec2d(object->getPos().x(), object->getPos().y()) - world_point)
-                .length();
-        if (nearest_object == nullptr || new_length < length) {
-            nearest_object = object;
-            length = new_length;
+        if (!object->getIsFixed()) {
+            double new_length = (object->getPos() - world_point).length();
+            if (nearest_object == nullptr || new_length < length) {
+                nearest_object = object;
+                length = new_length;
+            }
         }
     }
 
-    if (event->buttons() & Qt::LeftButton) {
+    if (event->buttons() & Qt::RightButton) {
         vec2d local_point = camera_point;
         local_point.rotate(world.getCamera().getAngle());
         local_point.translate(world.getCamera().getPosX(),
@@ -211,20 +234,35 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event) {
 
         nearest_object->explosion(local_point);
         update();
-    } else if (event->buttons() & Qt::RightButton) {
-        auto camera_v = event->pos() - oldPos;
-        vec2d world_v = vec2d(camera_v);
-        world_v.rotate(-world.getCamera().getAngle());
+    } else if (event->buttons() & Qt::LeftButton) {
+        vec2d local_point = camera_point;
+        local_point.rotate(world.getCamera().getAngle());
+        local_point.translate(world.getCamera().getPosX(),
+                              world.getCamera().getPosY());
 
-        auto size = qMin(width(), height());
-        nearest_object->setPos(vec2d(
-            nearest_object->getPos().x() +
-                world_v.x() * world.getCamera().getCameraWidth() / size,
-            nearest_object->getPos().y() -
-                world_v.y() * world.getCamera().getCameraHeight() / size));
+        local_point.translate(-nearest_object->getPos().x(),
+                              -nearest_object->getPos().y());
+        local_point.rotate(-nearest_object->getAngle());
 
-        oldPos = event->pos();
+        mouse_connection->setObject1(nearest_object);
+        mouse_connection->setPoint1({2, 2});
+        mouse_connection->setPoint2(world_point);
+
         update();
+
+        // auto camera_v = event->pos() - oldPos;
+        // vec2d world_v = vec2d(camera_v);
+        // world_v.rotate(-world.getCamera().getAngle());
+
+        // auto size = qMin(width(), height());
+        // nearest_object->setPos(vec2d(
+        //     nearest_object->getPos().x() +
+        //         world_v.x() * world.getCamera().getCameraWidth() / size,
+        //     nearest_object->getPos().y() -
+        //         world_v.y() * world.getCamera().getCameraHeight() / size));
+
+        // oldPos = event->pos();
+        // update();
     }
 }
 

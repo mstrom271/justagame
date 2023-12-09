@@ -35,6 +35,12 @@ void object2d::setAngleSpeed(double newAngleSpeed) {
     angleSpeed = newAngleSpeed;
 }
 
+bool object2d::getIsFixed() const { return isFixed; }
+void object2d::setIsFixed(bool newIsFixed) { isFixed = newIsFixed; }
+
+double object2d::getWeight() const { return weight; }
+void object2d::setWeight(double newWeight) { weight = newWeight; }
+
 void object2d::add(primitive2d *p) {
     collisionModel.push_back(p);
 
@@ -64,6 +70,21 @@ void object2d::explosion(vec2d local_point) {
 
     collisionModel_expired = true;
     displayModel_VBO_expired = true;
+}
+
+void object2d::applyForce(vec2d force, vec2d point) {
+    double point_dist = point.length();
+    double force_length = force.length();
+
+    if (force_length > 0) {
+        constexpr double mass_distribution = 5; // TODO runtime calculation
+        double angle_rate =
+            point_dist / mass_distribution * std::sin((-point).angle(force));
+        vec2d norm_force = force / force_length;
+        setAngleSpeed(getAngleSpeed() + force_length * angle_rate * 0.01);
+        setSpeed(getSpeed() +
+                 norm_force * (force_length - force_length * angle_rate));
+    }
 }
 
 void object2d::precalcCollisionModel() {
