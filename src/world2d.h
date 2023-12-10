@@ -31,7 +31,9 @@ class world2d {
     ~world2d();
 
     void addObject(object2d *object);
+    void deleteObject(object2d *object);
     void addConnection(connection2d *connection);
+    void deleteConnection(connection2d *connection);
     std::list<object2d *> &getObjects();
     void setCamera(const camera2d &newCamera);
     camera2d getCamera();

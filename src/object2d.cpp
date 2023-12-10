@@ -1,6 +1,7 @@
 #include "object2d.h"
 #include "kdtree2d.h"
 #include "math2d.h"
+#include <QDebug>
 #include <cmath>
 #include <iterator>
 #include <list>
@@ -73,18 +74,15 @@ void object2d::explosion(vec2d local_point) {
 }
 
 void object2d::applyForce(vec2d force, vec2d point) {
-    double point_dist = point.length();
     double force_length = force.length();
 
-    if (force_length > 0) {
-        constexpr double mass_distribution = 5; // TODO runtime calculation
-        double angle_rate =
-            point_dist / mass_distribution * std::sin((-point).angle(force));
-        vec2d norm_force = force / force_length;
-        setAngleSpeed(getAngleSpeed() + force_length * angle_rate * 0.01);
-        setSpeed(getSpeed() +
-                 norm_force * (force_length - force_length * angle_rate));
-    }
+    constexpr double mass_distrib = 5; // TODO runtime calculation
+    double angle_rate =
+        point.length() / mass_distrib * std::sin((-point).angle(force));
+    setAngleSpeed(getAngleSpeed() + force_length * angle_rate * 0.007);
+
+    setSpeed(getSpeed() +
+             force.rotated(getAngle()).normed() * (1 - 1 * angle_rate) * 0.005);
 }
 
 void object2d::precalcCollisionModel() {
@@ -150,6 +148,17 @@ void object2d::precalcDisplayModel() {
 }
 
 bBox object2d::getBBox() { return collisionModel_bBox; }
+
+vec2d object2d::objectToWorld(vec2d objectPoint) {
+    objectPoint.rotate(getAngle());
+    objectPoint += getPos();
+    return objectPoint;
+}
+vec2d object2d::worldToObject(vec2d worldPoint) {
+    worldPoint -= getPos();
+    worldPoint.rotate(-getAngle());
+    return worldPoint;
+}
 
 collisionObjectsPoint::collisionObjectsPoint(object2d *obj1, object2d *obj2,
                                              const vec2d &pos,

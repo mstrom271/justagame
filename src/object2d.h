@@ -72,6 +72,8 @@ class object2d {
     // void precalcDisplayModel_KDTree(KDTree2d *kdtree);
 
     bBox getBBox();
+    vec2d objectToWorld(vec2d objectPoint);
+    vec2d worldToObject(vec2d worldPoint);
 };
 
 bool collisionDetection(const object2d &obj1, const object2d &obj2,

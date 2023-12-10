@@ -21,18 +21,22 @@ class connection2d {
     object2d *getObject2() { return obj2; }
     vec2d getPoint1() { return point1; }
     vec2d getPoint2() { return point2; }
+    vec2d getWorldPoint1() {
+        return getObject1() ? getObject1()->objectToWorld(getPoint1())
+                            : getPoint1();
+    }
+    vec2d getWorldPoint2() {
+        return getObject2() ? getObject2()->objectToWorld(getPoint2())
+                            : getPoint2();
+    }
 
     void precalcDebug_VBO(std::vector<float> &vertices) {
-        vec2d worldPos1{0, 0};
-        vec2d worldPos2{0, 0};
-        if (obj1)
-            worldPos1 = obj1->getPos();
-        if (obj2)
-            worldPos2 = obj2->getPos();
+        vec2d worldPoint1 = getWorldPoint1();
+        vec2d worldPoint2 = getWorldPoint2();
 
-        vertices.push_back((point1 + worldPos1).x());
-        vertices.push_back((point1 + worldPos1).y());
-        vertices.push_back((point2 + worldPos2).x());
-        vertices.push_back((point2 + worldPos2).y());
+        vertices.push_back(worldPoint1.x());
+        vertices.push_back(worldPoint1.y());
+        vertices.push_back(worldPoint2.x());
+        vertices.push_back(worldPoint2.y());
     }
 };

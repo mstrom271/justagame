@@ -27,4 +27,5 @@ class KDTree2d {
     void addItem(const Item &item, std::size_t depth = 0);
     void precalcDebug_VBO(std::vector<float> &vertices);
     void parseTree(std::vector<std::pair<Item, Item>> &result);
+    void getObject(const bBox &bbox);
 };

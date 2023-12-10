@@ -22,9 +22,6 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
 
     void updateMatrix();
 
-  signals:
-    void clicked();
-
   protected:
     void initializeGL() override;
     void paintGL() override;
@@ -33,12 +30,16 @@ class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions {
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    vec2d widgetToCamera(QPoint pos);
+    QPoint cameraToWidget(vec2d point);
 
   private:
     world2d world;
     QMatrix4x4 world_matrix;
     QOpenGLShaderProgram *program = nullptr, *program_debug = nullptr;
-    QPoint oldPos;
+    bool grabbedRM = false;
+    bool grabbedLM = false;
+    connection2d *mouse_connection;
     QTimer *timer;
     QElapsedTimer *elapsedTimer;
     static constexpr int PROGRAM_VERTEX_ATTRIBUTE = 0;

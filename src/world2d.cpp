@@ -8,8 +8,12 @@ world2d::~world2d() {
 }
 
 void world2d::addObject(object2d *object) { objects.push_back(object); }
+void world2d::deleteObject(object2d *object) { objects.remove(object); }
 void world2d::addConnection(connection2d *connection) {
     connections.push_back(connection);
+}
+void world2d::deleteConnection(connection2d *connection) {
+    connections.remove(connection);
 }
 
 std::list<object2d *> &world2d::getObjects() { return objects; }
@@ -117,7 +121,7 @@ void world2d::collisionDetection() {
         }
     }
 
-    qDebug() << result.size() << " " << collisionPoints.size();
+    // qDebug() << result.size() << " " << collisionPoints.size();
 }
 
 void world2d::collisionResolve() {
@@ -157,28 +161,27 @@ void world2d::update(double sec) {
         obj->setAngle(obj->getAngle() + obj->getAngleSpeed() * sec);
 
         // slow down objects
-        constexpr double viscosity = 0.02;
+        constexpr double viscosity = 0.005;
         obj->setSpeed(obj->getSpeed() * (1 - viscosity * sec));
         obj->setAngleSpeed(obj->getAngleSpeed() * (1 - viscosity * sec));
     }
 
     for (auto connection : connections) {
-        vec2d point1 = connection->getPoint1();
-        vec2d point2 = connection->getPoint2();
-        if (!connection->getObject1())
-            point1 -= connection->getObject2()->getPos();
-        if (!connection->getObject2())
-            point2 -= connection->getObject1()->getPos();
+        vec2d worldPoint1 = connection->getWorldPoint1();
+        vec2d worldPoint2 = connection->getWorldPoint2();
 
-        vec2d dist = point2 - point1;
-        // double length = dist.length();
-        // dist.norm();
-        if (connection->getObject1())
-            connection->getObject1()->applyForce(dist.normed() * 0.02,
+        if (connection->getObject1()) {
+            vec2d dist = connection->getObject1()->worldToObject(worldPoint2) -
+                         connection->getPoint1();
+            connection->getObject1()->applyForce(dist * 0.02,
                                                  connection->getPoint1());
-        if (connection->getObject2())
-            connection->getObject2()->applyForce(-dist.normed() * 0.02,
+        }
+        if (connection->getObject2()) {
+            vec2d dist = connection->getObject2()->worldToObject(worldPoint1) -
+                         connection->getPoint2();
+            connection->getObject2()->applyForce(dist * 0.02,
                                                  connection->getPoint2());
+        }
     }
 }
 

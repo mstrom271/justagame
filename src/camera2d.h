@@ -25,4 +25,15 @@ class camera2d {
     double getAngle() const { return angle; }
     double getCameraWidth() const { return camera_width; }
     double getCameraHeight() const { return camera_height; }
+
+    vec2d cameraToWorld(vec2d cameraPoint) {
+        cameraPoint.rotate(getAngle());
+        cameraPoint.translate(getPosX(), getPosY());
+        return cameraPoint;
+    }
+    vec2d worldToCamera(vec2d worldPoint) {
+        worldPoint.translate(-getPosX(), -getPosY());
+        worldPoint.rotate(-getAngle());
+        return worldPoint;
+    }
 };
