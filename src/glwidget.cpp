@@ -43,7 +43,7 @@ void GLWidget::initializeGL() {
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0.0, 1.0);
     float coef = float(width()) / height();
-    for (int i = 0; i < 1; i++) {
+    for (int i = 0; i < 5; i++) {
         double pos_x = (dis(gen) * 60 - 30) * coef;
         double pos_y = dis(gen) * 60 - 30;
         double angle = dis(gen) * 2 * pi;
@@ -192,15 +192,22 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
     if (event->buttons() & Qt::RightButton) {
         grabbedRM = true;
     } else if (event->buttons() & Qt::LeftButton) {
-        grabbedLM = true;
-
         vec2d worldPos =
             world.getCamera().cameraToWorld(widgetToCamera(event->pos()));
-        vec2d localPos = (*world.getObjects().begin())->worldToObject(worldPos);
 
-        mouse_connection = new connection2d(*world.getObjects().begin(),
-                                            nullptr, localPos, worldPos);
-        world.addConnection(mouse_connection);
+        std::vector<Item> result;
+        world.intersect(circle2d(worldPos, 0.5), result);
+        for (auto item : result)
+            if (!item.object->getIsFixed()) {
+                vec2d localPos = item.object->worldToObject(worldPos);
+
+                mouse_connection =
+                    new connection2d(item.object, nullptr, localPos, worldPos);
+                world.addConnection(mouse_connection);
+
+                grabbedLM = true;
+                break;
+            }
     }
 
     // GLWidget::mousePressEvent(event);
@@ -209,62 +216,19 @@ void GLWidget::mousePressEvent(QMouseEvent *event) {
 void GLWidget::mouseMoveEvent(QMouseEvent *event) {
     vec2d worldPos =
         world.getCamera().cameraToWorld(widgetToCamera(event->pos()));
-    vec2d localPos = (*world.getObjects().begin())->worldToObject(worldPos);
     if (grabbedLM)
         mouse_connection->setPoint2(worldPos);
-    if (grabbedRM)
-        (*world.getObjects().begin())->explosion(localPos);
+    if (grabbedRM) {
+        std::vector<Item> result;
+        world.intersect(circle2d(worldPos, 5), result);
+        for (auto item : result)
+            if (!item.object->getIsFixed()) {
+                vec2d localPos = item.object->worldToObject(worldPos);
+                item.object->explosion(localPos);
+                break;
+            }
+    }
 
-    // auto size = qMin(width(), height());
-    // vec2d camera_point((world.getCamera().getCameraWidth() / size) *
-    //                        (-width() / 2 + event->pos().rx()),
-    //                    (world.getCamera().getCameraHeight() / size) *
-    //                        (height() / 2 - event->pos().ry()));
-
-    // vec2d world_point = camera_point;
-    // world_point.rotate(world.getCamera().getAngle());
-    // world_point.translate(world.getCamera().getPosX(),
-    //                       world.getCamera().getPosY());
-
-    // object2d *nearest_object = nullptr;
-    // double length = 0;
-    // for (auto object : world.getObjects()) {
-    //     if (!object->getIsFixed()) {
-    //         double new_length = (object->getPos() - world_point).length();
-    //         if (nearest_object == nullptr || new_length < length) {
-    //             nearest_object = object;
-    //             length = new_length;
-    //         }
-    //     }
-    // }
-
-    // if (event->buttons() & Qt::RightButton) {
-    //     vec2d local_point = camera_point;
-    //     local_point.rotate(world.getCamera().getAngle());
-    //     local_point.translate(world.getCamera().getPosX(),
-    //                           world.getCamera().getPosY());
-
-    //     local_point.translate(-nearest_object->getPos().x(),
-    //                           -nearest_object->getPos().y());
-    //     local_point.rotate(-nearest_object->getAngle());
-
-    //     nearest_object->explosion(local_point);
-    //     update();
-    // } else if (event->buttons() & Qt::LeftButton) {
-    //     vec2d local_point = world_point;
-
-    //     local_point.translate(-nearest_object->getPos().x(),
-    //                           -nearest_object->getPos().y());
-    //     local_point.rotate(-nearest_object->getAngle());
-
-    //     mouse_connection->setObject1(nearest_object);
-    //     mouse_connection->setPoint1(local_point);
-    //     mouse_connection->setPoint2(world_point);
-
-    //     grabbedLM = true;
-
-    //     update();
-    // }
     // GLWidget::mouseMoveEvent(event);
 }
 

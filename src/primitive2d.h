@@ -31,6 +31,7 @@ class bBox {
     bBox &operator+=(const bBox &other);
 
     bool intersect(const bBox &other) const;
+    bool intersect(const vec2d &point) const;
 };
 
 class collisionPrimitivesPoint {

@@ -58,7 +58,7 @@ class object2d {
 
     void add(primitive2d *p);
     void explosion(vec2d local_point);
-    void applyForce(vec2d force, vec2d forcePoint);
+    void applyForceLocal(vec2d force, vec2d forcePoint);
 
     QOpenGLTexture *getDisplayModel_texture();
     QOpenGLBuffer *getDisplayModel_VBO();

@@ -40,6 +40,8 @@ class world2d {
     void precalc(bool isDebug = false);
     void collisionDetection();
     void collisionResolve();
+    void intersect(const primitive2d &primitive, std::vector<Item> &result);
+    void intersect(const vec2d &point, std::vector<Item> &result);
     void update(double sec);
     QOpenGLBuffer *getDebug_VBO(std::size_t index);
     QVector4D getDebug_color(std::size_t index);

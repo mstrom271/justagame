@@ -155,6 +155,22 @@ void world2d::collisionResolve() {
     }
 }
 
+void world2d::intersect(const primitive2d &primitive,
+                        std::vector<Item> &result) {
+    std::vector<Item> temp_result;
+    kdtree->intersect(primitive.getBBox(), temp_result);
+
+    collisionPrimitivesPoint p;
+    for (const auto &item : temp_result)
+        if (collisionPrimitives(*item.primitive, primitive, p))
+            result.push_back(item);
+}
+
+void world2d::intersect(const vec2d &point, std::vector<Item> &result) {
+    intersect(circle2d(point, 0.5), result);
+    // TODO without using circle2d class
+}
+
 void world2d::update(double sec) {
     for (auto obj : objects) {
         obj->setPos(obj->getPos() + obj->getSpeed() * sec);
@@ -173,14 +189,14 @@ void world2d::update(double sec) {
         if (connection->getObject1()) {
             vec2d dist = connection->getObject1()->worldToObject(worldPoint2) -
                          connection->getPoint1();
-            connection->getObject1()->applyForce(dist * 0.02,
-                                                 connection->getPoint1());
+            connection->getObject1()->applyForceLocal(dist * 0.0002,
+                                                      connection->getPoint1());
         }
         if (connection->getObject2()) {
             vec2d dist = connection->getObject2()->worldToObject(worldPoint1) -
                          connection->getPoint2();
-            connection->getObject2()->applyForce(dist * 0.02,
-                                                 connection->getPoint2());
+            connection->getObject2()->applyForceLocal(dist * 0.0002,
+                                                      connection->getPoint2());
         }
     }
 }

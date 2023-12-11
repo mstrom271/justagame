@@ -42,6 +42,11 @@ bool bBox::intersect(const bBox &other) const {
     return true;
 }
 
+bool bBox::intersect(const vec2d &point) const {
+    return point.x() > getMinX() && point.x() < getMaxX() &&
+           point.y() > getMinY() && point.y() < getMaxY();
+}
+
 // ----------------------
 // circle2d
 // ----------------------

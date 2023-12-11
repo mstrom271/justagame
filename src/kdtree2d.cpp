@@ -74,3 +74,23 @@ void KDTree2d::parseTree(std::vector<std::pair<Item, Item>> &result) {
     if (leaf2)
         leaf2->parseTree(result);
 }
+
+void KDTree2d::intersect(const bBox &bbox, std::vector<Item> &result) {
+    for (const auto &item : list)
+        result.push_back(item);
+
+    if (leaf1 && leaf1->bbox.intersect(bbox))
+        leaf1->intersect(bbox, result);
+    if (leaf2 && leaf2->bbox.intersect(bbox))
+        leaf2->intersect(bbox, result);
+}
+
+void KDTree2d::intersect(const vec2d &point, std::vector<Item> &result) {
+    for (const auto &item : list)
+        result.push_back(item);
+
+    if (leaf1 && leaf1->bbox.intersect(point))
+        leaf1->intersect(point, result);
+    if (leaf2 && leaf2->bbox.intersect(point))
+        leaf2->intersect(point, result);
+}

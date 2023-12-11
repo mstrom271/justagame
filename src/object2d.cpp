@@ -73,16 +73,16 @@ void object2d::explosion(vec2d local_point) {
     displayModel_VBO_expired = true;
 }
 
-void object2d::applyForce(vec2d force, vec2d point) {
-    double force_length = force.length();
+void object2d::applyForceLocal(vec2d force, vec2d point) {
+    double mass_distrib =
+        std::max(5.0, point.length()); // TODO runtime calculation
 
-    constexpr double mass_distrib = 5; // TODO runtime calculation
     double angle_rate =
         point.length() / mass_distrib * std::sin((-point).angle(force));
-    setAngleSpeed(getAngleSpeed() + force_length * angle_rate * 0.007);
-
+    setAngleSpeed(getAngleSpeed() +
+                  force.length() * angle_rate / (mass_distrib * pi * 2));
     setSpeed(getSpeed() +
-             force.rotated(getAngle()).normed() * (1 - 1 * angle_rate) * 0.005);
+             force.rotated(getAngle()) * (1 - std::abs(angle_rate)));
 }
 
 void object2d::precalcCollisionModel() {
