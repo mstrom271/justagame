@@ -17,6 +17,7 @@ class object2d {
     double angleSpeed;
 
     double weight = 1;
+    double weightDistrib = 1;
     bool isFixed = false;
 
     std::list<primitive2d *> collisionModel; // in local coords
@@ -50,11 +51,12 @@ class object2d {
     double getAngleSpeed() const;
     void setAngleSpeed(double newAngleSpeed);
 
-    bool getIsFixed() const;
-    void setIsFixed(bool newIsFixed);
-
     double getWeight() const;
     void setWeight(double newWeight);
+    double getWeightDistrib() const;
+    void setWeightDistrib(double newWeightDistrib);
+    bool getIsFixed() const;
+    void setIsFixed(bool newIsFixed);
 
     void add(primitive2d *p);
     void explosion(vec2d local_point);

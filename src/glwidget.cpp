@@ -71,6 +71,8 @@ void GLWidget::initializeGL() {
         object->setAngle(angle);
         object->setSpeed({speedX, speedY});
         object->setAngleSpeed(speedAngle);
+        object->setWeight(width * height);
+        object->setWeightDistrib(vec2d(width / 2, height / 2).length());
         // object->add(new line2d({-width / 2, -height / 1.5},
         //                        {width / 2, -height / 1.5}));
         // object->add(new rectangle2d({0, height / 2}, {width, height / 10},

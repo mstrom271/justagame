@@ -36,11 +36,14 @@ void object2d::setAngleSpeed(double newAngleSpeed) {
     angleSpeed = newAngleSpeed;
 }
 
-bool object2d::getIsFixed() const { return isFixed; }
-void object2d::setIsFixed(bool newIsFixed) { isFixed = newIsFixed; }
-
 double object2d::getWeight() const { return weight; }
 void object2d::setWeight(double newWeight) { weight = newWeight; }
+double object2d::getWeightDistrib() const { return weightDistrib; }
+void object2d::setWeightDistrib(double newWeightDistrib) {
+    weightDistrib = newWeightDistrib;
+}
+bool object2d::getIsFixed() const { return isFixed; }
+void object2d::setIsFixed(bool newIsFixed) { isFixed = newIsFixed; }
 
 void object2d::add(primitive2d *p) {
     collisionModel.push_back(p);
@@ -74,15 +77,14 @@ void object2d::explosion(vec2d local_point) {
 }
 
 void object2d::applyForceLocal(vec2d force, vec2d point) {
-    double mass_distrib =
-        std::max(5.0, point.length()); // TODO runtime calculation
+    double angleSpeedFactor = std::clamp(point.length() / getWeightDistrib() *
+                                             std::sin(point.angle(force)),
+                                         -1.0, 1.0);
+    double speedFactor = 1 - std::abs(angleSpeedFactor);
 
-    double angle_rate =
-        point.length() / mass_distrib * std::sin((-point).angle(force));
-    setAngleSpeed(getAngleSpeed() +
-                  force.length() * angle_rate / (mass_distrib * pi * 2));
-    setSpeed(getSpeed() +
-             force.rotated(getAngle()) * (1 - std::abs(angle_rate)));
+    setAngleSpeed(getAngleSpeed() -
+                  force.length() * angleSpeedFactor / getWeightDistrib());
+    setSpeed(getSpeed() + force.rotated(getAngle()) * speedFactor);
 }
 
 void object2d::precalcCollisionModel() {

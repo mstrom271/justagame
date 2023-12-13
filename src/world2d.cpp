@@ -110,11 +110,11 @@ void world2d::collisionDetection() {
                 collisionPoints.back().setPos(
                     (collisionPoints.back().getPos() + point.getPos()) / 2);
                 collisionPoints.back().setNormal1(
-                    (collisionPoints.back().getNormal1() + point.getNormal1()) /
-                    2);
+                    (collisionPoints.back().getNormal1() + point.getNormal1())
+                        .normed());
                 collisionPoints.back().setNormal2(
-                    (collisionPoints.back().getNormal2() + point.getNormal2()) /
-                    2);
+                    (collisionPoints.back().getNormal2() + point.getNormal2())
+                        .normed());
                 collisionPoints.back().setDepth(
                     (collisionPoints.back().getDepth() + point.getDepth()) / 2);
             }
@@ -135,22 +135,46 @@ void world2d::collisionResolve() {
         else
             pullout_v1 = dist;
 
-        if (dist.dotProduct(point.getNormal2()) < 0.1)
+        if (dist.dotProduct(point.getNormal2()) < -0.1)
             pullout_v2 = point.getNormal2();
         else
             pullout_v2 = -dist;
 
         if (!point.getObj1()->getIsFixed() && !point.getObj2()->getIsFixed()) {
+            double cosA1 = point.getObj1()->getSpeed().dotProduct(pullout_v1);
+            double cosA2 = point.getObj2()->getSpeed().dotProduct(pullout_v2);
+
             point.getObj1()->setPos(point.getObj1()->getPos() +
                                     pullout_v2 * point.getDepth() / 2);
+            if (cosA1 > 0) {
+                point.getObj1()->setSpeed(point.getObj1()->getSpeed() -
+                                          pullout_v1 * cosA1);
+                point.getObj2()->setSpeed(point.getObj2()->getSpeed() +
+                                          pullout_v1 * cosA1);
+            }
+
             point.getObj2()->setPos(point.getObj2()->getPos() +
                                     pullout_v1 * point.getDepth() / 2);
+            if (cosA2 > 0) {
+                point.getObj2()->setSpeed(point.getObj2()->getSpeed() -
+                                          pullout_v2 * cosA2);
+                point.getObj1()->setSpeed(point.getObj1()->getSpeed() +
+                                          pullout_v2 * cosA2);
+            }
         } else if (!point.getObj1()->getIsFixed()) {
             point.getObj1()->setPos(point.getObj1()->getPos() +
                                     pullout_v2 * point.getDepth());
+            double cosA1 = point.getObj1()->getSpeed().dotProduct(pullout_v1);
+            if (cosA1 > 0)
+                point.getObj1()->setSpeed(point.getObj1()->getSpeed() -
+                                          pullout_v1 * cosA1);
         } else if (!point.getObj2()->getIsFixed()) {
             point.getObj2()->setPos(point.getObj2()->getPos() +
                                     pullout_v1 * point.getDepth());
+            double cosA2 = point.getObj2()->getSpeed().dotProduct(pullout_v2);
+            if (cosA2 > 0)
+                point.getObj2()->setSpeed(point.getObj2()->getSpeed() -
+                                          pullout_v2 * cosA2);
         }
     }
 }
